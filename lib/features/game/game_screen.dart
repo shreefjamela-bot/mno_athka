@@ -2,9 +2,6 @@
 // شاشة اللعبة الرئيسية
 // اسم الملف: game_screen.dart
 // المكان: lib/features/game/
-//
-// هنا يصير اللعب الفعلي
-// سؤال + خيارات + مؤقت + نقاط
 // ==============================
 
 import 'dart:async';
@@ -12,92 +9,58 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/question_model.dart';
+import '../../data/models/category_model.dart';
 import '../../data/repositories/questions_data.dart';
+import 'result_screen.dart';
 
 class GameScreen extends StatefulWidget {
-  // المستوى اللي اختاره اللاعب
   final int level;
+  // الفئة — مطلوبة لشاشة النتيجة
+  final CategoryModel? category;
 
   const GameScreen({
     super.key,
     required this.level,
+    this.category,
   });
 
   @override
   State<GameScreen> createState() => _GameScreenState();
 }
 
-// ==============================
-// _GameScreenState
-// StatefulWidget = يتغير حسب اللعب
-// ==============================
 class _GameScreenState extends State<GameScreen> {
 
-  // ==============================
-  // المتغيرات — حالة اللعبة
-  // ==============================
-
-  // قائمة الأسئلة حسب المستوى
   late List<QuestionModel> _questions;
-
-  // رقم السؤال الحالي — يبدأ من ٠
   int _currentIndex = 0;
-
-  // النقاط الكلية
   int _totalPoints = 0;
-
-  // الوقت المتبقي بالثواني
+  int _correctAnswers = 0; // عداد الإجابات الصحيحة
   int _timeLeft = 120;
-
-  // المؤقت
   Timer? _timer;
-
-  // رقم الإجابة اللي اختارها اللاعب
-  // null = ما اختار بعد
   int? _selectedIndex;
-
-  // هل ظهرت الإجابة الصحيحة
   bool _showAnswer = false;
 
-  // ==============================
-  // initState — يشتغل أول ما تفتح الشاشة
-  // ==============================
   @override
   void initState() {
     super.initState();
-    // جيب الأسئلة حسب المستوى
     _questions = QuestionsData.getByLevel(widget.level);
-    // ابدأ المؤقت
     _startTimer();
   }
 
-  // ==============================
-  // dispose — يشتغل لما تقفل الشاشة
-  // مهم عشان ما يحدث memory leak
-  // ==============================
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
   }
 
-  // ==============================
-  // دالة المؤقت
-  // ==============================
   void _startTimer() {
-    // الوقت حسب المستوى
     _timeLeft = 120;
-
-    // Timer.periodic = يشتغل كل ثانية
     _timer = Timer.periodic(
       const Duration(seconds: 1),
           (timer) {
         setState(() {
           if (_timeLeft > 0) {
-            // نقص ثانية
             _timeLeft--;
           } else {
-            // انتهى الوقت — انتقل للسؤال الجاي
             _timer?.cancel();
             _nextQuestion();
           }
@@ -106,129 +69,73 @@ class _GameScreenState extends State<GameScreen> {
     );
   }
 
-  // ==============================
-  // دالة اختيار الإجابة
-  // ==============================
   void _selectAnswer(int index) {
-    // إذا اختار قبل — ما يغير
     if (_selectedIndex != null) return;
-
-    // وقف المؤقت
     _timer?.cancel();
 
     setState(() {
       _selectedIndex = index;
       _showAnswer = true;
 
-      // إذا صح — زد النقاط
       if (_questions[_currentIndex].isCorrect(index)) {
         _totalPoints += _questions[_currentIndex].points;
+        _correctAnswers++; // زد عداد الصح
       }
     });
 
-    // بعد ثانيتين انتقل للسؤال الجاي
     Future.delayed(const Duration(seconds: 2), _nextQuestion);
   }
 
-  // ==============================
-  // دالة الانتقال للسؤال الجاي
-  // ==============================
   void _nextQuestion() {
+    if (!mounted) return;
+
     if (_currentIndex < _questions.length - 1) {
       setState(() {
         _currentIndex++;
         _selectedIndex = null;
         _showAnswer = false;
       });
-      // ابدأ المؤقت من جديد
       _startTimer();
     } else {
-      // خلصت الأسئلة — روح لشاشة النتيجة
-      _showResult();
+      _goToResult();
     }
   }
 
   // ==============================
-  // دالة عرض النتيجة النهائية
+  // الانتقال لشاشة النتيجة
   // ==============================
-  void _showResult() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-        ),
-        title: const Text(
-          '🏆 انتهت اللعبة!',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
+  void _goToResult() {
+    _timer?.cancel();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResultScreen(
+          totalPoints: _totalPoints,
+          correctAnswers: _correctAnswers,
+          totalQuestions: _questions.length,
+          category: widget.category ?? CategoryModel(
+            id: 'general',
+            title: 'معلومات عامة',
+            emoji: '🌍',
+            description: '',
           ),
-          textAlign: TextAlign.center,
+          level: widget.level,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.emoji_events,
-              color: AppColors.gold,
-              size: 60,
-            ),
-            const SizedBox(height: AppSizes.spaceMD),
-            Text(
-              'نقاطك: $_totalPoints',
-              style: const TextStyle(
-                color: AppColors.gold,
-                fontSize: AppSizes.fontXXL,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              // أغلق الديالوج وارجع للرئيسية
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-            ),
-            child: const Text('ارجع للرئيسية'),
-          ),
-        ],
       ),
     );
   }
 
-  // ==============================
-  // لون زر الإجابة حسب الحالة
-  // ==============================
   Color _getAnswerColor(int index) {
-    // ما اختار بعد — اللون الافتراضي
     if (!_showAnswer) return AppColors.cardBackground;
-
-    // الإجابة الصحيحة — أخضر
     if (index == _questions[_currentIndex].correctIndex) {
       return AppColors.correct;
     }
-
-    // الإجابة اللي اختارها — أحمر إذا غلط
     if (index == _selectedIndex) return AppColors.wrong;
-
-    // باقي الخيارات — افتراضي
     return AppColors.cardBackground;
   }
 
-  // ==============================
-  // build — يبني الشاشة
-  // ==============================
   @override
   Widget build(BuildContext context) {
-    // إذا ما في أسئلة
     if (_questions.isEmpty) {
       return const Scaffold(
         backgroundColor: AppColors.background,
@@ -241,15 +148,10 @@ class _GameScreenState extends State<GameScreen> {
       );
     }
 
-    // السؤال الحالي
     final question = _questions[_currentIndex];
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      // ==============================
-      // الشريط العلوي
-      // ==============================
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: Text(
@@ -265,19 +167,13 @@ class _GameScreenState extends State<GameScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           children: [
-
-            // ==============================
-            // المؤقت وعداد الأسئلة
-            // ==============================
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // عداد الأسئلة
                 Text(
                   'السؤال ${_currentIndex + 1}/${_questions.length}',
                   style: const TextStyle(
@@ -285,7 +181,6 @@ class _GameScreenState extends State<GameScreen> {
                     fontSize: AppSizes.fontLG,
                   ),
                 ),
-                // المؤقت
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.spaceMD,
@@ -306,7 +201,6 @@ class _GameScreenState extends State<GameScreen> {
                     ),
                   ),
                 ),
-                // النقاط للسؤال
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSizes.spaceMD,
@@ -326,22 +220,14 @@ class _GameScreenState extends State<GameScreen> {
                 ),
               ],
             ),
-
             const SizedBox(height: AppSizes.spaceLG),
-
-            // ==============================
-            // بطاقة السؤال
-            // ==============================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSizes.questionCardPadding),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-                border: Border.all(
-                  color: AppColors.primary,
-                  width: 1,
-                ),
+                border: Border.all(color: AppColors.primary, width: 1),
               ),
               child: Text(
                 question.question,
@@ -353,31 +239,22 @@ class _GameScreenState extends State<GameScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-
             const SizedBox(height: AppSizes.spaceLG),
-
-            // ==============================
-            // خيارات الإجابة
-            // ==============================
             Expanded(
               child: ListView.builder(
                 itemCount: question.options.length,
                 itemBuilder: (context, index) {
                   return Padding(
-                    padding: const EdgeInsets.only(
-                        bottom: AppSizes.spaceMD),
+                    padding: const EdgeInsets.only(bottom: AppSizes.spaceMD),
                     child: GestureDetector(
                       onTap: () => _selectAnswer(index),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
                         height: AppSizes.answerButtonHeight,
-                        padding: const EdgeInsets.all(
-                            AppSizes.answerButtonPadding),
+                        padding: const EdgeInsets.all(AppSizes.answerButtonPadding),
                         decoration: BoxDecoration(
-                          // اللون يتغير حسب الإجابة
                           color: _getAnswerColor(index),
-                          borderRadius: BorderRadius.circular(
-                              AppSizes.radiusMD),
+                          borderRadius: BorderRadius.circular(AppSizes.radiusMD),
                           border: Border.all(
                             color: _selectedIndex == index
                                 ? AppColors.primary
@@ -400,7 +277,6 @@ class _GameScreenState extends State<GameScreen> {
                 },
               ),
             ),
-
           ],
         ),
       ),
