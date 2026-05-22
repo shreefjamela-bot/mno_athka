@@ -2,9 +2,6 @@
 // شاشة الفئات
 // اسم الملف: categories_screen.dart
 // المكان: lib/features/categories/
-//
-// تعرض كل الفئات المتاحة
-// اللاعب يختار منها قبل اللعب
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -12,7 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/category_model.dart';
 import '../../data/repositories/categories_data.dart';
-import '../game/game_screen.dart';
+import '../game/level_screen.dart';
 
 class CategoriesScreen extends StatelessWidget {
   const CategoriesScreen({super.key});
@@ -21,10 +18,6 @@ class CategoriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      // ==============================
-      // الشريط العلوي
-      // ==============================
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: const Text(
@@ -40,16 +33,11 @@ class CategoriesScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ==============================
-            // العنوان
-            // ==============================
             const Text(
               'الفئات المتاحة',
               style: TextStyle(
@@ -57,16 +45,9 @@ class CategoriesScreen extends StatelessWidget {
                 fontSize: AppSizes.fontLG,
               ),
             ),
-
             const SizedBox(height: AppSizes.spaceMD),
-
-            // ==============================
-            // شبكة الفئات
-            // GridView = عرض عناصر في شبكة
-            // ==============================
             Expanded(
               child: GridView.builder(
-                // عدد الأعمدة — عمودين
                 gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -81,7 +62,6 @@ class CategoriesScreen extends StatelessWidget {
                 },
               ),
             ),
-
           ],
         ),
       ),
@@ -89,10 +69,6 @@ class CategoriesScreen extends StatelessWidget {
   }
 }
 
-// ==============================
-// بطاقة الفئة
-// ويدجت منفصل لكل بطاقة
-// ==============================
 class _CategoryCard extends StatelessWidget {
   final CategoryModel category;
 
@@ -113,15 +89,14 @@ class _CategoryCard extends StatelessWidget {
           return;
         }
 
-        // انتقل لشاشة اللعبة
+        // انتقل لشاشة المستوى
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const GameScreen(level: 1),
+            builder: (context) => LevelScreen(category: category),
           ),
         );
       },
-
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
@@ -137,20 +112,11 @@ class _CategoryCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
-            // ==============================
-            // أيقونة الفئة
-            // ==============================
             Text(
               category.isLocked ? '🔒' : category.emoji,
               style: const TextStyle(fontSize: 40),
             ),
-
             const SizedBox(height: AppSizes.spaceSM),
-
-            // ==============================
-            // اسم الفئة
-            // ==============================
             Text(
               category.title,
               style: TextStyle(
@@ -162,12 +128,7 @@ class _CategoryCard extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-
             const SizedBox(height: AppSizes.spaceXS),
-
-            // ==============================
-            // وصف الفئة
-            // ==============================
             Padding(
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSizes.spaceSM),
@@ -182,7 +143,6 @@ class _CategoryCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-
           ],
         ),
       ),
