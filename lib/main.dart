@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
-import 'features/game/game_screen.dart';
+import 'features/categories/categories_screen.dart';
 
 // ==============================
 // نقطة البداية — أول شي يشتغل
@@ -92,12 +92,12 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               child: ElevatedButton(
-                // عند الضغط — ينتقل لشاشة اللعبة
+                // عند الضغط — ينتقل لشاشة الفئات
                 onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const GameScreen(level: 1),
+                      builder: (context) => const CategoriesScreen(),
                     ),
                   );
                 },
