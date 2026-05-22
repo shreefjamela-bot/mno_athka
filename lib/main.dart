@@ -7,17 +7,12 @@ import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
 import 'features/categories/categories_screen.dart';
+import 'features/profile/profile_screen.dart';
 
-// ==============================
-// نقطة البداية — أول شي يشتغل
-// ==============================
 void main() {
   runApp(const MnoAthkaApp());
 }
 
-// ==============================
-// MnoAthkaApp — الكلاس الرئيسي
-// ==============================
 class MnoAthkaApp extends StatelessWidget {
   const MnoAthkaApp({super.key});
 
@@ -32,9 +27,6 @@ class MnoAthkaApp extends StatelessWidget {
   }
 }
 
-// ==============================
-// HomeScreen — الشاشة الرئيسية
-// ==============================
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -42,6 +34,34 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
+
+      // ==============================
+      // شريط علوي مع زر الملف الشخصي
+      // ==============================
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        // زر الملف الشخصي — يمين
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.person_outline,
+              color: AppColors.textPrimary,
+              size: 28,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -92,7 +112,6 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               child: ElevatedButton(
-                // عند الضغط — ينتقل لشاشة الفئات
                 onPressed: () {
                   Navigator.push(
                     context,
