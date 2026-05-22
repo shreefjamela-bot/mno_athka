@@ -42,7 +42,10 @@ class _GameScreenState extends State<GameScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = QuestionsData.getByLevel(widget.level);
+    _questions = widget.category != null
+        ? QuestionsData.getByLevelAndCategory(
+        widget.category!.id, widget.level)
+        : QuestionsData.getByLevel(widget.level);
     _startTimer();
   }
 
