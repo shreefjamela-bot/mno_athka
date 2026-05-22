@@ -2,9 +2,6 @@
 // شاشة اختيار المستوى
 // اسم الملف: level_screen.dart
 // المكان: lib/features/game/
-//
-// اللاعب يختار المستوى قبل اللعب
-// ١ = ٢٠٠ نقطة | ٢ = ٤٠٠ نقطة | ٣ = ٦٠٠ نقطة
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -14,7 +11,6 @@ import '../../data/models/category_model.dart';
 import 'game_screen.dart';
 
 class LevelScreen extends StatelessWidget {
-  // الفئة اللي اختارها اللاعب
   final CategoryModel category;
 
   const LevelScreen({
@@ -26,10 +22,6 @@ class LevelScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      // ==============================
-      // الشريط العلوي
-      // ==============================
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: Text(
@@ -45,16 +37,12 @@ class LevelScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // ==============================
-            // أيقونة الفئة
-            // ==============================
             Text(
               category.emoji,
               style: const TextStyle(fontSize: 80),
@@ -62,7 +50,6 @@ class LevelScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceLG),
 
-            // اسم الفئة
             Text(
               category.title,
               style: const TextStyle(
@@ -74,7 +61,6 @@ class LevelScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceSM),
 
-            // وصف الفئة
             Text(
               category.description,
               style: const TextStyle(
@@ -86,9 +72,6 @@ class LevelScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // ==============================
-            // عنوان اختيار المستوى
-            // ==============================
             const Text(
               'اختر المستوى',
               style: TextStyle(
@@ -98,10 +81,6 @@ class LevelScreen extends StatelessWidget {
             ),
 
             const SizedBox(height: AppSizes.spaceMD),
-
-            // ==============================
-            // أزرار المستويات
-            // ==============================
 
             // المستوى الأول
             _LevelButton(
@@ -144,9 +123,6 @@ class LevelScreen extends StatelessWidget {
   }
 }
 
-// ==============================
-// زر المستوى
-// ==============================
 class _LevelButton extends StatelessWidget {
   final int level;
   final String title;
@@ -168,11 +144,14 @@ class _LevelButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // انتقل لشاشة اللعبة بالمستوى المختار
+        // انتقل لشاشة اللعبة — مع تمرير الفئة
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => GameScreen(level: level),
+            builder: (context) => GameScreen(
+              level: level,
+              category: category, // ← هنا التغيير
+            ),
           ),
         );
       },
@@ -187,7 +166,6 @@ class _LevelButton extends StatelessWidget {
         child: Row(
           children: [
 
-            // أيقونة المستوى
             Text(
               emoji,
               style: const TextStyle(fontSize: 30),
@@ -195,7 +173,6 @@ class _LevelButton extends StatelessWidget {
 
             const SizedBox(width: AppSizes.spaceMD),
 
-            // اسم المستوى
             Expanded(
               child: Text(
                 title,
@@ -207,7 +184,6 @@ class _LevelButton extends StatelessWidget {
               ),
             ),
 
-            // النقاط
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSizes.spaceMD,
