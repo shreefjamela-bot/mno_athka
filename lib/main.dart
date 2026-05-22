@@ -4,6 +4,8 @@
 // ==============================
 
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
+import 'core/constants/app_colors.dart';
 
 // ==============================
 // نقطة البداية — أول شي يشتغل
@@ -13,9 +15,7 @@ void main() {
 }
 
 // ==============================
-// MnoAthkaApp
-// الكلاس الرئيسي للتطبيق
-// StatelessWidget = ما يتغير شكله
+// MnoAthkaApp — الكلاس الرئيسي
 // ==============================
 class MnoAthkaApp extends StatelessWidget {
   const MnoAthkaApp({super.key});
@@ -23,33 +23,17 @@ class MnoAthkaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // اسم التطبيق
       title: 'منو أذكى',
-
-      // إخفاء شريط debug الأحمر
       debugShowCheckedModeBanner: false,
-
-      // ==============================
-      // الثيم — ألوان اللعبة
-      // ==============================
-      theme: ThemeData(
-        // اللون الأساسي للعبة
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF), // بنفسجي
-        ),
-        useMaterial3: true,
-      ),
-
-      // الشاشة الرئيسية
+      // الثيم من ملف app_theme.dart
+      theme: AppTheme.darkTheme,
       home: const HomeScreen(),
     );
   }
 }
 
 // ==============================
-// HomeScreen
-// الشاشة الرئيسية للعبة
-// StatelessWidget = ما تحتاج حالة
+// HomeScreen — الشاشة الرئيسية
 // ==============================
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -57,8 +41,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // لون خلفية الشاشة
-      backgroundColor: const Color(0xFF1A1A2E),
+      // اللون من AppColors مو مكتوب يدوياً
+      backgroundColor: AppColors.background,
 
       body: Center(
         child: Column(
@@ -66,15 +50,15 @@ class HomeScreen extends StatelessWidget {
           children: [
 
             // ==============================
-            // أيقونة اللعبة
+            // أيقونة الكأس الذهبية
             // ==============================
             const Icon(
-              Icons.emoji_events, // أيقونة كأس
-              size: 100,          // الحجم
-              color: Color(0xFFFFD700), // لون ذهبي
+              Icons.emoji_events,
+              size: 100,
+              // اللون الذهبي من AppColors
+              color: AppColors.gold,
             ),
 
-            // مسافة بين الأيقونة والنص
             const SizedBox(height: 24),
 
             // ==============================
@@ -83,59 +67,72 @@ class HomeScreen extends StatelessWidget {
             const Text(
               'منو أذكى؟',
               style: TextStyle(
-                fontSize: 42,                    // حجم الخط
-                fontWeight: FontWeight.bold,     // سماكة الخط
-                color: Colors.white,             // لون النص
+                fontSize: 42,
+                fontWeight: FontWeight.bold,
+                // اللون من AppColors
+                color: AppColors.textPrimary,
               ),
             ),
 
-            // مسافة
             const SizedBox(height: 12),
 
             // ==============================
-            // وصف صغير
+            // وصف اللعبة
             // ==============================
             const Text(
               'اختبر معلوماتك وتحدى أصدقاءك',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.white54, // أبيض شفاف
+                // اللون الثانوي من AppColors
+                color: AppColors.textSecondary,
               ),
             ),
 
-            // مسافة كبيرة
             const SizedBox(height: 48),
 
             // ==============================
             // زر ابدأ اللعبة
-            // ElevatedButton = زر مرفوع
             // ==============================
-            ElevatedButton(
-              // onPressed = شو يصير لما تضغط الزر
-              onPressed: () {
-                // لحين — رسالة مؤقتة
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('قريباً — شاشة اللعبة!'),
+            Container(
+              // تأثير Glow حول الزر
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    // Glow بنفسجي من AppColors
+                    color: AppColors.glowPrimary,
+                    blurRadius: 20,
+                    spreadRadius: 2,
                   ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6C63FF), // لون الزر
-                foregroundColor: Colors.white,            // لون النص
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 48, // مسافة أفقية
-                  vertical: 16,   // مسافة عمودية
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30), // زوايا دائرية
-                ),
+                ],
               ),
-              child: const Text(
-                'ابدأ اللعبة',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              child: ElevatedButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('قريباً — شاشة اللعبة!'),
+                      backgroundColor: AppColors.primary,
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  // اللون من AppColors
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.textPrimary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 48,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  'ابدأ اللعبة',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
