@@ -1,113 +1,99 @@
 // ==============================
-// ملف الألوان الثابتة للعبة
-// اسم الملف: app_colors.dart
-// المكان: lib/core/constants/
-//
-// كل ألوان اللعبة في مكان واحد
-// لو أبيت تغير أي لون — غيره هنا فقط
+// ملف الألوان الفاخرة
+// Premium Dark Theme
 // ==============================
 
 import 'package:flutter/material.dart';
 
-// abstract = كلاس ما ينشأ منه object
-// فقط نستخدمه للوصول للألوان مباشرة
 abstract class AppColors {
 
   // ==============================
-  // ألوان الخلفية
+  // الخلفيات — أسود فحمي فاخر
   // ==============================
 
-  // الخلفية الرئيسية — أسود فخم
-  static const Color background = Color(0xFF0A0A0F);
+  // الخلفية الرئيسية
+  static const Color background = Color(0xFF0D0D0F);
 
-  // خلفية البطاقات — أسود أفتح شوي
-  static const Color cardBackground = Color(0xFF12121A);
+  // خلفية الكروت — Glass Effect
+  static const Color cardBackground = Color(0xFF16161A);
 
-  // خلفية ثانوية للعناصر
-  static const Color surfaceColor = Color(0xFF1A1A2E);
-
-  // ==============================
-  // الألوان الأساسية
-  // ==============================
-
-  // البنفسجي الكهربائي — هوية اللعبة
-  static const Color primary = Color(0xFF7C3AED);
-
-  // البنفسجي الفاتح — للتأثيرات
-  static const Color primaryLight = Color(0xFF9D5FF3);
-
-  // البنفسجي الداكن — عند الضغط
-  static const Color primaryDark = Color(0xFF5B21B6);
+  // خلفية ثانوية
+  static const Color surfaceColor = Color(0xFF1E1E24);
 
   // ==============================
-  // اللون الثاني — السماوي النيون
+  // الذهبي الملكي — اللون الأساسي
   // ==============================
 
-  // السماوي الأساسي
-  static const Color secondary = Color(0xFF00D4FF);
+  // Champagne Gold
+  static const Color primary = Color(0xFFD4AF6A);
 
-  // السماوي عند الضغط على الزر
-  static const Color secondaryDark = Color(0xFF06B6D4);
+  // ذهبي فاتح
+  static const Color primaryLight = Color(0xFFE8C97A);
 
-  // ==============================
-  // لون النقاط والجوائز
-  // ==============================
-
-  // الذهبي الفاخر — للنقاط والتاج
-  static const Color gold = Color(0xFFFFD700);
-
-  // الذهبي الداكن — للتفاصيل
-  static const Color goldDark = Color(0xFFB8860B);
+  // ذهبي داكن
+  static const Color primaryDark = Color(0xFFB8963E);
 
   // ==============================
-  // ألوان النصوص
+  // الرمادي المزرق — اللون الثاني
   // ==============================
 
-  // الأبيض — النصوص الرئيسية
-  static const Color textPrimary = Color(0xFFFFFFFF);
+  static const Color secondary = Color(0xFF6B7FA3);
 
-  // الرمادي الفاتح — النصوص الثانوية
-  static const Color textSecondary = Color(0xFF94A3B8);
-
-  // الرمادي الداكن — النصوص الخافتة
-  static const Color textHint = Color(0xFF475569);
+  static const Color secondaryDark = Color(0xFF4A5A7A);
 
   // ==============================
-  // ألوان الإجابات
+  // الذهبي للنقاط والجوائز
   // ==============================
 
-  // الإجابة الصحيحة — أخضر
-  static const Color correct = Color(0xFF22C55E);
-
-  // الإجابة الخاطئة — أحمر
-  static const Color wrong = Color(0xFFEF4444);
-
-  // الإجابة المحددة — أصفر
-  static const Color selected = Color(0xFFF59E0B);
+  static const Color gold = Color(0xFFD4AF6A);
+  static const Color goldDark = Color(0xFF8B6914);
 
   // ==============================
-  // ألوان المستويات
+  // النصوص — أبيض ناعم
   // ==============================
 
-  // المستوى الأول — ٢٠٠ نقطة — أخضر
-  static const Color level1 = Color(0xFF22C55E);
+  // أبيض مائل للرمادي — راحة للعين
+  static const Color textPrimary = Color(0xFFE8E8EE);
 
-  // المستوى الثاني — ٤٠٠ نقطة — برتقالي
-  static const Color level2 = Color(0xFFF97316);
+  // رمادي فاتح — ثانوي
+  static const Color textSecondary = Color(0xFF8B8B9A);
 
-  // المستوى الثالث — ٦٠٠ نقطة — أحمر
-  static const Color level3 = Color(0xFFEF4444);
+  // رمادي داكن — خافت
+  static const Color textHint = Color(0xFF4A4A58);
 
   // ==============================
-  // تأثير Glow للأزرار
+  // الإجابات
   // ==============================
 
-  // Glow البنفسجي — حول الزر الأساسي
-  static const Color glowPrimary = Color(0x557C3AED);
+  // أخضر زمردي ملكي
+  static const Color correct = Color(0xFF2D7A5F);
 
-  // Glow السماوي — حول الزر الثاني
-  static const Color glowSecondary = Color(0x5500D4FF);
+  // أحمر خمري احترافي
+  static const Color wrong = Color(0xFF8B2635);
 
-  // Glow الذهبي — حول النقاط
-  static const Color glowGold = Color(0x55FFD700);
+  // كهرماني ذهبي — المحدد
+  static const Color selected = Color(0xFFB8860B);
+
+  // ==============================
+  // المستويات
+  // ==============================
+
+  static const Color level1 = Color(0xFF2D7A5F);
+  static const Color level2 = Color(0xFFB8860B);
+  static const Color level3 = Color(0xFF8B2635);
+
+  // ==============================
+  // تأثيرات Glow
+  // ==============================
+
+  static const Color glowPrimary = Color(0x44D4AF6A);
+  static const Color glowSecondary = Color(0x446B7FA3);
+  static const Color glowGold = Color(0x44D4AF6A);
+
+  // ==============================
+  // حدود الكروت Glass
+  // ==============================
+
+  static const Color cardBorder = Color(0xFF2A2A35);
+  static const Color cardBorderGold = Color(0x33D4AF6A);
 }
