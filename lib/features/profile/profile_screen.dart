@@ -5,11 +5,12 @@
 // ==============================
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../data/repositories/local_storage.dart';
+import '../../data/repositories/local_storage.dart' as AppStorage;
+import '../auth_screen.dart';
 
-// StatefulWidget عشان نحمّل البيانات من التخزين
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -19,35 +20,25 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
 
-  // ==============================
-  // المتغيرات — البيانات المحفوظة
-  // ==============================
   int _highScore = 0;
   int _totalGames = 0;
   int _correctAnswers = 0;
-
-  // هل البيانات تحمّل الآن
   bool _isLoading = true;
 
-  // ==============================
-  // initState — يحمّل البيانات فور فتح الشاشة
-  // ==============================
+  // اتصال Supabase
+  final _supabase = Supabase.instance.client;
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
-  // ==============================
-  // دالة تحميل البيانات
-  // ==============================
   Future<void> _loadData() async {
-    // نجيب كل البيانات من التخزين
-    final highScore = await LocalStorage.getHighScore();
-    final totalGames = await LocalStorage.getTotalGames();
-    final correctAnswers = await LocalStorage.getCorrectAnswers();
+    final highScore = await AppStorage.LocalStorage.getHighScore();
+    final totalGames = await AppStorage.LocalStorage.getTotalGames();
+    final correctAnswers = await AppStorage.LocalStorage.getCorrectAnswers();
 
-    // نحدّث الشاشة بالبيانات الجديدة
     setState(() {
       _highScore = highScore;
       _totalGames = totalGames;
@@ -56,8 +47,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
+  // ==============================
+  // دالة تسجيل الخروج
+  // ==============================
+  Future<void> _signOut() async {
+    await _supabase.auth.signOut();
+    setState(() {});
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تسجيل الخروج'),
+          backgroundColor: AppColors.primary,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // هل المستخدم مسجّل دخول
+    final user = _supabase.auth.currentUser;
+    final isLoggedIn = user != null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -76,11 +87,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       body: _isLoading
-      // لما يحمّل — يعرض دائرة تحميل
           ? const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
+        child: CircularProgressIndicator(color: AppColors.primary),
       )
           : Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
@@ -110,19 +118,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: AppSizes.spaceMD),
 
-            // اسم اللاعب
-            const Text(
-              'لاعب جديد',
-              style: TextStyle(
+            // اسم اللاعب أو إيميله
+            Text(
+              isLoggedIn
+                  ? user.email ?? 'لاعب'
+                  : 'لاعب جديد',
+              style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: AppSizes.fontXXL,
+                fontSize: AppSizes.fontLG,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // إحصائيات حقيقية من التخزين
+            // إحصائيات
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -149,37 +159,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // رسالة تسجيل الدخول
-            Container(
+            // ==============================
+            // زر تسجيل الدخول أو الخروج
+            // ==============================
+            SizedBox(
               width: double.infinity,
-              padding: const EdgeInsets.all(AppSizes.spaceLG),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-                border: Border.all(color: AppColors.primary),
-              ),
-              child: const Column(
-                children: [
-                  Text('🔒', style: TextStyle(fontSize: 40)),
-                  SizedBox(height: AppSizes.spaceSM),
-                  Text(
-                    'سجّل دخول لحفظ نقاطك',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: AppSizes.fontLG,
-                      fontWeight: FontWeight.bold,
-                    ),
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (isLoggedIn) {
+                    await _signOut();
+                  } else {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AuthScreen(),
+                      ),
+                    );
+                    setState(() {});
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isLoggedIn
+                      ? AppColors.wrong
+                      : AppColors.primary,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppSizes.spaceMD,
                   ),
-                  SizedBox(height: AppSizes.spaceXS),
-                  Text(
-                    'في المرحلة القادمة نضيف تسجيل الدخول',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppSizes.fontMD,
-                    ),
-                    textAlign: TextAlign.center,
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(AppSizes.radiusMD),
                   ),
-                ],
+                ),
+                child: Text(
+                  isLoggedIn ? '🚪 تسجيل الخروج' : '🔑 تسجيل الدخول',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppSizes.fontXL,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
 
