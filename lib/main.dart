@@ -10,20 +10,14 @@ import 'core/constants/app_colors.dart';
 import 'core/supabase_config.dart';
 import 'features/categories/categories_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/leaderboard_screen.dart';
 
-// ==============================
-// نقطة البداية — async عشان ننتظر Supabase
-// ==============================
 void main() async {
-  // مطلوب قبل أي async في main
   WidgetsFlutterBinding.ensureInitialized();
-
-  // تهيئة Supabase
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
-
   runApp(const MnoAthkaApp());
 }
 
@@ -51,6 +45,23 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
+        // زر لوحة المتصدرين — يسار
+        leading: IconButton(
+          icon: const Icon(
+            Icons.leaderboard,
+            color: AppColors.gold,
+            size: 28,
+          ),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LeaderboardScreen(),
+              ),
+            );
+          },
+        ),
+        // زر الملف الشخصي — يمين
         actions: [
           IconButton(
             icon: const Icon(
@@ -104,6 +115,7 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 48),
 
+            // زر ابدأ اللعبة
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
@@ -141,6 +153,31 @@ class HomeScreen extends StatelessWidget {
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // زر لوحة المتصدرين
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LeaderboardScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.leaderboard,
+                color: AppColors.gold,
+              ),
+              label: const Text(
+                'لوحة المتصدرين',
+                style: TextStyle(
+                  color: AppColors.gold,
+                  fontSize: 16,
                 ),
               ),
             ),
