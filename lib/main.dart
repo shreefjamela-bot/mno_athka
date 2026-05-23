@@ -4,12 +4,26 @@
 // ==============================
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
+import 'core/supabase_config.dart';
 import 'features/categories/categories_screen.dart';
 import 'features/profile/profile_screen.dart';
 
-void main() {
+// ==============================
+// نقطة البداية — async عشان ننتظر Supabase
+// ==============================
+void main() async {
+  // مطلوب قبل أي async في main
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // تهيئة Supabase
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
   runApp(const MnoAthkaApp());
 }
 
@@ -34,14 +48,9 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      // ==============================
-      // شريط علوي مع زر الملف الشخصي
-      // ==============================
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        // زر الملف الشخصي — يمين
         actions: [
           IconButton(
             icon: const Icon(
@@ -61,13 +70,11 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // أيقونة الكأس الذهبية
             const Icon(
               Icons.emoji_events,
               size: 100,
@@ -76,7 +83,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // اسم اللعبة
             const Text(
               'منو أذكى؟',
               style: TextStyle(
@@ -88,7 +94,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // وصف اللعبة
             const Text(
               'اختبر معلوماتك وتحدى أصدقاءك',
               style: TextStyle(
@@ -99,7 +104,6 @@ class HomeScreen extends StatelessWidget {
 
             const SizedBox(height: 48),
 
-            // زر ابدأ اللعبة
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),

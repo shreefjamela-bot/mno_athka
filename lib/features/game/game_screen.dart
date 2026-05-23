@@ -10,12 +10,11 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/question_model.dart';
 import '../../data/models/category_model.dart';
-import '../../data/repositories/questions_data.dart';
+import '../../data/repositories/supabase_repository.dart';
 import 'result_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final int level;
-  // الفئة — مطلوبة لشاشة النتيجة
   final CategoryModel? category;
 
   const GameScreen({
@@ -30,29 +29,48 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> {
 
-  late List<QuestionModel> _questions;
+  List<QuestionModel> _questions = [];
   int _currentIndex = 0;
   int _totalPoints = 0;
-  int _correctAnswers = 0; // عداد الإجابات الصحيحة
+  int _correctAnswers = 0;
   int _timeLeft = 120;
   Timer? _timer;
   int? _selectedIndex;
   bool _showAnswer = false;
 
+  // هل يحمّل الأسئلة
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
-    _questions = widget.category != null
-        ? QuestionsData.getByLevelAndCategory(
-        widget.category!.id, widget.level)
-        : QuestionsData.getByLevel(widget.level);
-    _startTimer();
+    _loadQuestions();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  // ==============================
+  // جيب الأسئلة من Supabase
+  // ==============================
+  Future<void> _loadQuestions() async {
+    final questions = await SupabaseRepository.getQuestions(
+      categoryId: widget.category?.id ?? 'general',
+      level: widget.level,
+    );
+
+    setState(() {
+      _questions = questions;
+      _isLoading = false;
+    });
+
+    // ابدأ المؤقت بعد ما تحمّل الأسئلة
+    if (_questions.isNotEmpty) {
+      _startTimer();
+    }
   }
 
   void _startTimer() {
@@ -82,7 +100,7 @@ class _GameScreenState extends State<GameScreen> {
 
       if (_questions[_currentIndex].isCorrect(index)) {
         _totalPoints += _questions[_currentIndex].points;
-        _correctAnswers++; // زد عداد الصح
+        _correctAnswers++;
       }
     });
 
@@ -104,9 +122,6 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
-  // ==============================
-  // الانتقال لشاشة النتيجة
-  // ==============================
   void _goToResult() {
     _timer?.cancel();
     Navigator.pushReplacement(
@@ -139,10 +154,31 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_questions.isEmpty) {
+
+    // شاشة التحميل
+    if (_isLoading) {
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
+      );
+    }
+
+    // ما في أسئلة
+    if (_questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(
           child: Text(
             'ما في أسئلة لهذا المستوى',
             style: TextStyle(color: AppColors.textPrimary),

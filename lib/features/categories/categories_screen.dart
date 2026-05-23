@@ -8,11 +8,40 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/category_model.dart';
-import '../../data/repositories/categories_data.dart';
+import '../../data/repositories/supabase_repository.dart';
 import '../game/level_screen.dart';
 
-class CategoriesScreen extends StatelessWidget {
+class CategoriesScreen extends StatefulWidget {
   const CategoriesScreen({super.key});
+
+  @override
+  State<CategoriesScreen> createState() => _CategoriesScreenState();
+}
+
+class _CategoriesScreenState extends State<CategoriesScreen> {
+
+  // قائمة الفئات
+  List<CategoryModel> _categories = [];
+
+  // هل يحمّل
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  // ==============================
+  // جيب الفئات من Supabase
+  // ==============================
+  Future<void> _loadCategories() async {
+    final categories = await SupabaseRepository.getCategories();
+    setState(() {
+      _categories = categories;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +62,22 @@ class CategoriesScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: _isLoading
+      // شاشة التحميل
+          ? const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+        ),
+      )
+      // إذا ما في فئات
+          : _categories.isEmpty
+          ? const Center(
+        child: Text(
+          'ما في فئات متاحة',
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+      )
+          : Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,9 +99,9 @@ class CategoriesScreen extends StatelessWidget {
                   mainAxisSpacing: AppSizes.spaceMD,
                   childAspectRatio: 1.1,
                 ),
-                itemCount: CategoriesData.categories.length,
+                itemCount: _categories.length,
                 itemBuilder: (context, index) {
-                  final category = CategoriesData.categories[index];
+                  final category = _categories[index];
                   return _CategoryCard(category: category);
                 },
               ),
@@ -78,7 +122,6 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // إذا مقفلة — ما يدخل
         if (category.isLocked) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -88,8 +131,6 @@ class _CategoryCard extends StatelessWidget {
           );
           return;
         }
-
-        // انتقل لشاشة المستوى
         Navigator.push(
           context,
           MaterialPageRoute(
