@@ -2,30 +2,20 @@
 // شاشة النتيجة النهائية
 // اسم الملف: result_screen.dart
 // المكان: lib/features/game/
-//
-// تظهر بعد انتهاء كل الأسئلة
-// تعرض النقاط والإحصائيات
 // ==============================
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/category_model.dart';
+import '../../data/repositories/local_storage.dart';
 
-class ResultScreen extends StatelessWidget {
-  // النقاط الكلية
+// StatefulWidget عشان نحمّل البيانات المحفوظة
+class ResultScreen extends StatefulWidget {
   final int totalPoints;
-
-  // عدد الإجابات الصحيحة
   final int correctAnswers;
-
-  // عدد الأسئلة الكلي
   final int totalQuestions;
-
-  // الفئة اللي لعب فيها
   final CategoryModel category;
-
-  // المستوى
   final int level;
 
   const ResultScreen({
@@ -37,14 +27,35 @@ class ResultScreen extends StatelessWidget {
     required this.level,
   });
 
-  // ==============================
-  // دالة تحدد رسالة النتيجة
-  // حسب النسبة المئوية
-  // ==============================
-  String _getResultMessage() {
-    // نسبة الإجابات الصحيحة
-    final percentage = (correctAnswers / totalQuestions) * 100;
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
 
+class _ResultScreenState extends State<ResultScreen> {
+
+  // ==============================
+  // initState — يحفظ النقاط فور فتح الشاشة
+  // ==============================
+  @override
+  void initState() {
+    super.initState();
+    _saveResults();
+  }
+
+  // ==============================
+  // دالة حفظ النتائج
+  // ==============================
+  Future<void> _saveResults() async {
+    // احفظ أعلى نقاط
+    await LocalStorage.saveHighScore(widget.totalPoints);
+    // زد عدد الجولات
+    await LocalStorage.incrementTotalGames();
+    // زد عدد الإجابات الصحيحة
+    await LocalStorage.addCorrectAnswers(widget.correctAnswers);
+  }
+
+  String _getResultMessage() {
+    final percentage = (widget.correctAnswers / widget.totalQuestions) * 100;
     if (percentage == 100) return '🏆 مثالي! أنت الأذكى!';
     if (percentage >= 80) return '🌟 ممتاز! أداء رائع!';
     if (percentage >= 60) return '👍 جيد! تقدر أحسن!';
@@ -52,12 +63,8 @@ class ResultScreen extends StatelessWidget {
     return '💪 حاول مرة ثانية!';
   }
 
-  // ==============================
-  // دالة تحدد لون النتيجة
-  // ==============================
   Color _getResultColor() {
-    final percentage = (correctAnswers / totalQuestions) * 100;
-
+    final percentage = (widget.correctAnswers / widget.totalQuestions) * 100;
     if (percentage == 100) return AppColors.gold;
     if (percentage >= 80) return AppColors.correct;
     if (percentage >= 60) return AppColors.secondary;
@@ -69,10 +76,6 @@ class ResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      // ==============================
-      // الشريط العلوي
-      // ==============================
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: const Text(
@@ -83,19 +86,14 @@ class ResultScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        // إخفاء زر الرجوع
         automaticallyImplyLeading: false,
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
 
-            // ==============================
-            // رسالة النتيجة
-            // ==============================
             Text(
               _getResultMessage(),
               style: TextStyle(
@@ -108,26 +106,19 @@ class ResultScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // ==============================
-            // بطاقة الإحصائيات
-            // ==============================
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSizes.spaceXL),
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-                border: Border.all(
-                  color: AppColors.primary,
-                  width: 1,
-                ),
+                border: Border.all(color: AppColors.primary, width: 1),
               ),
               child: Column(
                 children: [
 
-                  // اسم الفئة
                   Text(
-                    '${category.emoji} ${category.title}',
+                    '${widget.category.emoji} ${widget.category.title}',
                     style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: AppSizes.fontLG,
@@ -136,9 +127,8 @@ class ResultScreen extends StatelessWidget {
 
                   const SizedBox(height: AppSizes.spaceLG),
 
-                  // النقاط الكلية
                   Text(
-                    '$totalPoints',
+                    '${widget.totalPoints}',
                     style: const TextStyle(
                       color: AppColors.gold,
                       fontSize: 72,
@@ -155,41 +145,30 @@ class ResultScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: AppSizes.spaceLG),
-
-                  // خط فاصل
                   const Divider(color: AppColors.surfaceColor),
-
                   const SizedBox(height: AppSizes.spaceMD),
 
-                  // إحصائيات
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-
-                      // الإجابات الصحيحة
                       _StatItem(
                         label: 'صحيح',
-                        value: '$correctAnswers',
+                        value: '${widget.correctAnswers}',
                         color: AppColors.correct,
                         emoji: '✅',
                       ),
-
-                      // الإجابات الخاطئة
                       _StatItem(
                         label: 'خاطئ',
-                        value: '${totalQuestions - correctAnswers}',
+                        value: '${widget.totalQuestions - widget.correctAnswers}',
                         color: AppColors.wrong,
                         emoji: '❌',
                       ),
-
-                      // المستوى
                       _StatItem(
                         label: 'المستوى',
-                        value: '$level',
+                        value: '${widget.level}',
                         color: AppColors.primary,
                         emoji: '⭐',
                       ),
-
                     ],
                   ),
 
@@ -199,14 +178,10 @@ class ResultScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // ==============================
-            // زر العب مرة ثانية
-            // ==============================
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // ارجع لشاشة المستوى
                   Navigator.pop(context);
                   Navigator.pop(context);
                 },
@@ -232,17 +207,11 @@ class ResultScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceMD),
 
-            // ==============================
-            // زر الرئيسية
-            // ==============================
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
-                  // ارجع للشاشة الرئيسية
-                  Navigator.of(context).popUntil(
-                        (route) => route.isFirst,
-                  );
+                  Navigator.of(context).popUntil((route) => route.isFirst);
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: AppColors.primary),
@@ -271,9 +240,6 @@ class ResultScreen extends StatelessWidget {
   }
 }
 
-// ==============================
-// ويدجت الإحصائية الواحدة
-// ==============================
 class _StatItem extends StatelessWidget {
   final String label;
   final String value;

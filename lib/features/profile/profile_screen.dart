@@ -7,9 +7,54 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../data/repositories/local_storage.dart';
 
-class ProfileScreen extends StatelessWidget {
+// StatefulWidget عشان نحمّل البيانات من التخزين
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+
+  // ==============================
+  // المتغيرات — البيانات المحفوظة
+  // ==============================
+  int _highScore = 0;
+  int _totalGames = 0;
+  int _correctAnswers = 0;
+
+  // هل البيانات تحمّل الآن
+  bool _isLoading = true;
+
+  // ==============================
+  // initState — يحمّل البيانات فور فتح الشاشة
+  // ==============================
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  // ==============================
+  // دالة تحميل البيانات
+  // ==============================
+  Future<void> _loadData() async {
+    // نجيب كل البيانات من التخزين
+    final highScore = await LocalStorage.getHighScore();
+    final totalGames = await LocalStorage.getTotalGames();
+    final correctAnswers = await LocalStorage.getCorrectAnswers();
+
+    // نحدّث الشاشة بالبيانات الجديدة
+    setState(() {
+      _highScore = highScore;
+      _totalGames = totalGames;
+      _correctAnswers = correctAnswers;
+      _isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +75,14 @@ class ProfileScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: _isLoading
+      // لما يحمّل — يعرض دائرة تحميل
+          ? const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
+        ),
+      )
+          : Padding(
         padding: const EdgeInsets.all(AppSizes.spaceMD),
         child: Column(
           children: [
@@ -70,26 +122,26 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // إحصائيات
+            // إحصائيات حقيقية من التخزين
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _StatCard(
                   emoji: '🏆',
                   label: 'أعلى نقاط',
-                  value: '0',
+                  value: '$_highScore',
                   color: AppColors.gold,
                 ),
                 _StatCard(
                   emoji: '🎮',
                   label: 'عدد الجولات',
-                  value: '0',
+                  value: '$_totalGames',
                   color: AppColors.primary,
                 ),
                 _StatCard(
                   emoji: '✅',
                   label: 'إجابات صح',
-                  value: '0',
+                  value: '$_correctAnswers',
                   color: AppColors.correct,
                 ),
               ],
@@ -97,7 +149,7 @@ class ProfileScreen extends StatelessWidget {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // رسالة مؤقتة
+            // رسالة تسجيل الدخول
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSizes.spaceLG),
