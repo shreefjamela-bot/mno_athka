@@ -1,7 +1,6 @@
 // ==============================
-// شاشة الفئات
+// شاشة الفئات — Premium Theme
 // اسم الملف: categories_screen.dart
-// المكان: lib/features/categories/
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -20,10 +19,7 @@ class CategoriesScreen extends StatefulWidget {
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
 
-  // قائمة الفئات
   List<CategoryModel> _categories = [];
-
-  // هل يحمّل
   bool _isLoading = true;
 
   @override
@@ -32,9 +28,6 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     _loadCategories();
   }
 
-  // ==============================
-  // جيب الفئات من Supabase
-  // ==============================
   Future<void> _loadCategories() async {
     final categories = await SupabaseRepository.getCategories();
     setState(() {
@@ -50,26 +43,23 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         title: const Text(
-          'اختر الفئة',
+          'اختر فئتك',
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColors.primary,
             fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
           ),
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: _isLoading
-      // شاشة التحميل
           ? const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
+        child: CircularProgressIndicator(color: AppColors.primary),
       )
-      // إذا ما في فئات
           : _categories.isEmpty
           ? const Center(
         child: Text(
@@ -83,10 +73,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'الفئات المتاحة',
+              'اختر موضوعك وابدأ التحدي',
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: AppSizes.fontLG,
+                fontSize: AppSizes.fontMD,
+                letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: AppSizes.spaceMD),
@@ -95,9 +86,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 gridDelegate:
                 const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: AppSizes.spaceMD,
-                  mainAxisSpacing: AppSizes.spaceMD,
-                  childAspectRatio: 1.1,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.0,
                 ),
                 itemCount: _categories.length,
                 itemBuilder: (context, index) {
@@ -113,20 +104,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   }
 }
 
-class _CategoryCard extends StatelessWidget {
+class _CategoryCard extends StatefulWidget {
   final CategoryModel category;
 
   const _CategoryCard({required this.category});
 
   @override
+  State<_CategoryCard> createState() => _CategoryCardState();
+}
+
+class _CategoryCardState extends State<_CategoryCard> {
+
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final category = widget.category;
+
     return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
       onTap: () {
         if (category.isLocked) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('هذه الفئة مقفلة حالياً'),
-              backgroundColor: AppColors.wrong,
+            SnackBar(
+              content: const Text('هذه الفئة مقفلة حالياً 🔒'),
+              backgroundColor: AppColors.wrong.withOpacity(0.8),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           );
           return;
@@ -138,53 +146,133 @@ class _CategoryCard extends StatelessWidget {
           ),
         );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-          border: Border.all(
-            color: category.isLocked
-                ? AppColors.textHint
-                : AppColors.primary,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              category.isLocked ? '🔒' : category.emoji,
-              style: const TextStyle(fontSize: 40),
+      child: AnimatedScale(
+        scale: _isPressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: category.isLocked
+                  ? AppColors.textHint
+                  : AppColors.cardBorderGold,
+              width: 1,
             ),
-            const SizedBox(height: AppSizes.spaceSM),
-            Text(
-              category.title,
-              style: TextStyle(
-                color: category.isLocked
-                    ? AppColors.textHint
-                    : AppColors.textPrimary,
-                fontSize: AppSizes.fontLG,
-                fontWeight: FontWeight.bold,
+            boxShadow: category.isLocked
+                ? []
+                : [
+              BoxShadow(
+                color: AppColors.glowGold,
+                blurRadius: 12,
+                spreadRadius: 0,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSizes.spaceXS),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSizes.spaceSM),
-              child: Text(
-                category.description,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: AppSizes.fontSM,
+            ],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+
+              // ==============================
+              // صورة الفئة أو الأيقونة
+              // ==============================
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: category.isLocked
+                      ? AppColors.surfaceColor
+                      : AppColors.primary.withOpacity(0.15),
+                  border: Border.all(
+                    color: category.isLocked
+                        ? AppColors.textHint
+                        : AppColors.cardBorderGold,
+                    width: 1,
+                  ),
+                ),
+                child: ClipOval(
+                  child: category.isLocked
+                  // مقفلة — أيقونة قفل
+                      ? const Icon(
+                    Icons.lock,
+                    color: AppColors.textHint,
+                    size: 30,
+                  )
+                      : category.imageUrl != null
+                  // عندها صورة — نعرضها
+                      ? Image.network(
+                    category.imageUrl!,
+                    fit: BoxFit.cover,
+                    width: 70,
+                    height: 70,
+                    // لما الصورة تحمّل
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                        ),
+                      );
+                    },
+                    // لو الصورة ما حملت
+                    errorBuilder: (context, error, stack) {
+                      return Center(
+                        child: Text(
+                          category.emoji,
+                          style: const TextStyle(fontSize: 26),
+                        ),
+                      );
+                    },
+                  )
+                  // ما عندها صورة — أيقونة
+                      : Center(
+                    child: Text(
+                      category.emoji,
+                      style: const TextStyle(fontSize: 26),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // اسم الفئة
+              Text(
+                category.title,
+                style: TextStyle(
+                  color: category.isLocked
+                      ? AppColors.textHint
+                      : AppColors.textPrimary,
+                  fontSize: AppSizes.fontMD,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+
+              const SizedBox(height: 4),
+
+              // وصف الفئة
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Text(
+                  category.description,
+                  style: TextStyle(
+                    color: category.isLocked
+                        ? AppColors.textHint
+                        : AppColors.textSecondary,
+                    fontSize: 10,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+
+            ],
+          ),
         ),
       ),
     );
