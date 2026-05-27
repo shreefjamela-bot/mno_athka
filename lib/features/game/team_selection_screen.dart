@@ -1,9 +1,6 @@
 // ==============================
 // شاشة اختيار الفئات للفريقين
 // اسم الملف: team_selection_screen.dart
-// المكان: lib/features/game/
-//
-// كل فريق يختار ٤ فئات
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -31,12 +28,12 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   List<CategoryModel> _allCategories = [];
   bool _isLoading = true;
 
-  // فئات كل فريق — أقصى ٤ لكل فريق
   List<String> _team1Selected = [];
   List<String> _team2Selected = [];
-
-  // الفريق الحالي اللي يختار — ١ أو ٢
   int _currentTeam = 1;
+
+  // ← التغيير الوحيد: 3 بدل 4
+  static const int _maxCategories = 3;
 
   @override
   void initState() {
@@ -47,39 +44,27 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   Future<void> _loadCategories() async {
     final categories = await SupabaseRepository.getCategories();
     setState(() {
-      // نشيل المقفلة
-      _allCategories = categories
-          .where((c) => !c.isLocked)
-          .toList();
+      _allCategories = categories.where((c) => !c.isLocked).toList();
       _isLoading = false;
     });
   }
 
-  // ==============================
-  // هل الفئة محددة من أي فريق
-  // ==============================
   bool _isSelectedByTeam1(String id) => _team1Selected.contains(id);
   bool _isSelectedByTeam2(String id) => _team2Selected.contains(id);
-  bool _isSelected(String id) =>
-      _isSelectedByTeam1(id) || _isSelectedByTeam2(id);
 
-  // ==============================
-  // اختيار أو إلغاء فئة
-  // ==============================
   void _toggleCategory(CategoryModel category) {
     final id = category.id;
-
     setState(() {
       if (_currentTeam == 1) {
         if (_team1Selected.contains(id)) {
           _team1Selected.remove(id);
-        } else if (_team1Selected.length < 4) {
+        } else if (_team1Selected.length < _maxCategories) {
           _team1Selected.add(id);
         }
       } else {
         if (_team2Selected.contains(id)) {
           _team2Selected.remove(id);
-        } else if (_team2Selected.length < 4 &&
+        } else if (_team2Selected.length < _maxCategories &&
             !_team1Selected.contains(id)) {
           _team2Selected.add(id);
         }
@@ -87,9 +72,6 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
     });
   }
 
-  // ==============================
-  // الانتقال لشاشة اللوحة
-  // ==============================
   void _startGame() {
     final team1Categories = _allCategories
         .where((c) => _team1Selected.contains(c.id))
@@ -115,7 +97,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
   Widget build(BuildContext context) {
     final currentSelected =
     _currentTeam == 1 ? _team1Selected : _team2Selected;
-    final remaining = 4 - currentSelected.length;
+    final remaining = _maxCategories - currentSelected.length;
+    final isReady = currentSelected.length == _maxCategories;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -144,9 +127,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
           : Column(
         children: [
 
-          // ==============================
           // شريط الحالة
-          // ==============================
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(12),
@@ -158,8 +139,6 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-
-                // الفريق ١
                 Column(
                   children: [
                     Text(
@@ -174,7 +153,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_team1Selected.length}/4',
+                      '${_team1Selected.length}/$_maxCategories',
                       style: TextStyle(
                         color: _currentTeam == 1
                             ? AppColors.correct
@@ -185,15 +164,8 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     ),
                   ],
                 ),
-
-                // فاصل
-                Container(
-                  width: 1,
-                  height: 40,
-                  color: AppColors.cardBorder,
-                ),
-
-                // الفريق ٢
+                Container(width: 1, height: 40,
+                    color: AppColors.cardBorder),
                 Column(
                   children: [
                     Text(
@@ -208,7 +180,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_team2Selected.length}/4',
+                      '${_team2Selected.length}/$_maxCategories',
                       style: TextStyle(
                         color: _currentTeam == 2
                             ? AppColors.correct
@@ -219,7 +191,6 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     ),
                   ],
                 ),
-
               ],
             ),
           ),
@@ -242,9 +213,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
 
           const SizedBox(height: 8),
 
-          // ==============================
           // شبكة الفئات
-          // ==============================
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
@@ -289,8 +258,6 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-
-                        // الصورة أو الأيقونة
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: category.imageUrl != null
@@ -301,19 +268,17 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Text(
                               category.emoji,
-                              style: const TextStyle(fontSize: 28),
+                              style: const TextStyle(
+                                  fontSize: 28),
                             ),
                           )
                               : Text(
                             category.emoji,
-                            style:
-                            const TextStyle(fontSize: 28),
+                            style: const TextStyle(
+                                fontSize: 28),
                           ),
                         ),
-
                         const SizedBox(height: 6),
-
-                        // اسم الفئة
                         Text(
                           category.title,
                           style: TextStyle(
@@ -327,14 +292,11 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-
-                        // علامة الاختيار
                         if (byTeam1 || byTeam2)
                           Text(
                             byTeam1 ? '🔵' : '🔴',
                             style: const TextStyle(fontSize: 10),
                           ),
-
                       ],
                     ),
                   ),
@@ -343,20 +305,14 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
             ),
           ),
 
-          // ==============================
           // زر التالي
-          // ==============================
           Padding(
             padding: const EdgeInsets.all(16),
             child: GestureDetector(
               onTap: () {
-                if (_currentTeam == 1 &&
-                    _team1Selected.length == 4) {
-                  // انتقل للفريق ٢
+                if (_currentTeam == 1 && isReady) {
                   setState(() => _currentTeam = 2);
-                } else if (_currentTeam == 2 &&
-                    _team2Selected.length == 4) {
-                  // ابدأ اللعبة
+                } else if (_currentTeam == 2 && isReady) {
                   _startGame();
                 }
               },
@@ -365,10 +321,7 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                 width: double.infinity,
                 height: 54,
                 decoration: BoxDecoration(
-                  gradient: ((_currentTeam == 1 &&
-                      _team1Selected.length == 4) ||
-                      (_currentTeam == 2 &&
-                          _team2Selected.length == 4))
+                  gradient: isReady
                       ? const LinearGradient(
                     colors: [
                       AppColors.primaryDark,
@@ -377,18 +330,10 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                     ],
                   )
                       : null,
-                  color: ((_currentTeam == 1 &&
-                      _team1Selected.length == 4) ||
-                      (_currentTeam == 2 &&
-                          _team2Selected.length == 4))
-                      ? null
-                      : AppColors.surfaceColor,
+                  color: isReady ? null : AppColors.surfaceColor,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: ((_currentTeam == 1 &&
-                        _team1Selected.length == 4) ||
-                        (_currentTeam == 2 &&
-                            _team2Selected.length == 4))
+                    color: isReady
                         ? Colors.transparent
                         : AppColors.cardBorder,
                   ),
@@ -396,17 +341,14 @@ class _TeamSelectionScreenState extends State<TeamSelectionScreen> {
                 child: Center(
                   child: Text(
                     _currentTeam == 1
-                        ? _team1Selected.length == 4
+                        ? isReady
                         ? 'التالي — ${widget.team2Name} 🔴'
-                        : 'اختر ${4 - _team1Selected.length} فئة'
-                        : _team2Selected.length == 4
+                        : 'اختر ${remaining} فئة'
+                        : isReady
                         ? 'ابدأ اللعبة! 🎮'
-                        : 'اختر ${4 - _team2Selected.length} فئة',
+                        : 'اختر ${remaining} فئة',
                     style: TextStyle(
-                      color: ((_currentTeam == 1 &&
-                          _team1Selected.length == 4) ||
-                          (_currentTeam == 2 &&
-                              _team2Selected.length == 4))
+                      color: isReady
                           ? AppColors.background
                           : AppColors.textSecondary,
                       fontSize: 15,
