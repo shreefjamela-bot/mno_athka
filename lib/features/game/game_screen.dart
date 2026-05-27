@@ -1,5 +1,5 @@
 // ==============================
-// شاشة اللعبة — Premium Design
+// شاشة اللعبة — Open Question System
 // اسم الملف: game_screen.dart
 // ==============================
 
@@ -10,7 +10,6 @@ import '../../core/constants/app_colors.dart';
 import '../../data/models/question_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/repositories/supabase_repository.dart';
-import 'result_screen.dart';
 
 class GameScreen extends StatefulWidget {
   final int level;
@@ -35,14 +34,14 @@ class _GameScreenState extends State<GameScreen>
 
   List<QuestionModel> _questions = [];
   int _currentIndex = 0;
-  int _totalPoints = 0;
-  int _correctAnswers = 0;
+  int _team1Points = 0;
+  int _team2Points = 0;
   int _timeLeft = 120;
   Timer? _timer;
-  int? _selectedIndex;
-  bool _showAnswer = false;
   bool _isLoading = true;
-  bool _timesUp = false; // انتهى الوقت
+  bool _timesUp = false;
+  bool _showAnswer = false;
+  String? _selectedTeam;
 
   late AnimationController _questionController;
   late Animation<double> _questionFade;
@@ -50,7 +49,6 @@ class _GameScreenState extends State<GameScreen>
   late AnimationController _pointsController;
   late Animation<double> _pointsFade;
   late Animation<double> _pointsScale;
-  late AnimationController _answerController;
 
   @override
   void initState() {
@@ -80,13 +78,8 @@ class _GameScreenState extends State<GameScreen>
     _pointsFade = Tween<double>(begin: 1, end: 0).animate(
       CurvedAnimation(parent: _pointsController, curve: Curves.easeOut),
     );
-    _pointsScale = Tween<double>(begin: 1, end: 1.5).animate(
+    _pointsScale = Tween<double>(begin: 1, end: 1.8).animate(
       CurvedAnimation(parent: _pointsController, curve: Curves.easeOut),
-    );
-
-    _answerController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
     );
   }
 
@@ -95,7 +88,6 @@ class _GameScreenState extends State<GameScreen>
     _timer?.cancel();
     _questionController.dispose();
     _pointsController.dispose();
-    _answerController.dispose();
     super.dispose();
   }
 
@@ -117,48 +109,49 @@ class _GameScreenState extends State<GameScreen>
   void _startTimer() {
     _timeLeft = 120;
     _timesUp = false;
+    _showAnswer = false;
+    _selectedTeam = null;
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
         } else {
-          // ==============================
-          // انتهى الوقت — يوقف بس ما ينتقل
-          // ==============================
           _timer?.cancel();
           _timesUp = true;
+          _showAnswer = true;
         }
       });
     });
   }
 
-  void _selectAnswer(int index) {
-    if (_selectedIndex != null) return;
+  void _selectWinner(String team) {
+    if (_selectedTeam != null) return;
     _timer?.cancel();
 
     setState(() {
-      _selectedIndex = index;
+      _selectedTeam = team;
       _showAnswer = true;
-      _timesUp = false;
-      if (_questions[_currentIndex].isCorrect(index)) {
-        _totalPoints += _questions[_currentIndex].points;
-        _correctAnswers++;
+      _timesUp = true;
+      final points = _questions[_currentIndex].points;
+
+      if (team == 'team1') {
+        _team1Points += points;
+        _pointsController.forward(from: 0);
+      } else if (team == 'team2') {
+        _team2Points += points;
         _pointsController.forward(from: 0);
       }
     });
   }
 
-  // ==============================
-  // الانتقال للسؤال الجاي — يدوي
-  // ==============================
   void _nextQuestion() {
     if (!mounted) return;
     if (_currentIndex < _questions.length - 1) {
       _questionController.reset();
       setState(() {
         _currentIndex++;
-        _selectedIndex = null;
+        _selectedTeam = null;
         _showAnswer = false;
         _timesUp = false;
       });
@@ -169,49 +162,15 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
+  // ==============================
+  // يرجع النقاط للوحة مباشرة
+  // ==============================
   void _goToResult() {
     _timer?.cancel();
-    Navigator.pushReplacement(
-      context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => ResultScreen(
-          totalPoints: _totalPoints,
-          correctAnswers: _correctAnswers,
-          totalQuestions: _questions.length,
-          category: widget.category ?? CategoryModel(
-            id: 'general',
-            title: 'معلومات عامة',
-            emoji: '🌍',
-            description: '',
-          ),
-          level: widget.level,
-          team1Name: widget.team1Name,
-          team2Name: widget.team2Name,
-        ),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 600),
-      ),
-    );
-  }
-
-  Color _getAnswerColor(int index) {
-    if (!_showAnswer) return AppColors.cardBackground;
-    if (index == _questions[_currentIndex].correctIndex) {
-      return AppColors.correct.withOpacity(0.3);
-    }
-    if (index == _selectedIndex) return AppColors.wrong.withOpacity(0.3);
-    return AppColors.cardBackground;
-  }
-
-  Color _getAnswerBorderColor(int index) {
-    if (!_showAnswer) return AppColors.cardBorder;
-    if (index == _questions[_currentIndex].correctIndex) {
-      return AppColors.correct;
-    }
-    if (index == _selectedIndex) return AppColors.wrong;
-    return AppColors.cardBorder;
+    Navigator.pop(context, {
+      'team1': _team1Points,
+      'team2': _team2Points,
+    });
   }
 
   double get _timeProgress => _timeLeft / 120;
@@ -220,11 +179,6 @@ class _GameScreenState extends State<GameScreen>
     if (_timeLeft > 60) return AppColors.correct;
     if (_timeLeft > 20) return AppColors.primary;
     return AppColors.wrong;
-  }
-
-  String _getOptionLetter(int index) {
-    const letters = ['أ', 'ب', 'ج', 'د'];
-    return letters[index];
   }
 
   @override
@@ -237,17 +191,11 @@ class _GameScreenState extends State<GameScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const CircularProgressIndicator(
-                color: AppColors.primary,
-                strokeWidth: 2,
-              ),
+                  color: AppColors.primary, strokeWidth: 2),
               const SizedBox(height: 16),
-              const Text(
-                'جاري تحميل الأسئلة...',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
+              const Text('جاري تحميل الأسئلة...',
+                  style: TextStyle(
+                      color: AppColors.textSecondary, fontSize: 14)),
             ],
           ),
         ),
@@ -263,16 +211,14 @@ class _GameScreenState extends State<GameScreen>
             children: [
               const Text('😕', style: TextStyle(fontSize: 60)),
               const SizedBox(height: 16),
-              const Text(
-                'ما في أسئلة لهذا المستوى',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                ),
-              ),
+              const Text('ما في أسئلة لهذا المستوى',
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 18)),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pop(context, {
+                  'team1': _team1Points,
+                  'team2': _team2Points,
+                }),
                 child: const Text('ارجع'),
               ),
             ],
@@ -290,15 +236,13 @@ class _GameScreenState extends State<GameScreen>
         child: Stack(
           children: [
 
-            // خلفية زخرفية
             ...List.generate(6, (i) {
               final random = Random(i);
               return Positioned(
                 top: random.nextDouble() * size.height,
                 left: random.nextDouble() * size.width,
                 child: Container(
-                  width: 4,
-                  height: 4,
+                  width: 4, height: 4,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary.withOpacity(0.15),
@@ -310,41 +254,28 @@ class _GameScreenState extends State<GameScreen>
             Column(
               children: [
 
-                // ==============================
-                // الهيدر — الفريقين + النقاط
-                // ==============================
+                // الهيدر
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
                     children: [
-
-                      // زر الخروج
                       GestureDetector(
                         onTap: _showExitDialog,
                         child: Container(
-                          width: 38,
-                          height: 38,
+                          width: 38, height: 38,
                           decoration: BoxDecoration(
                             color: AppColors.surfaceColor,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: AppColors.cardBorder),
                           ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textSecondary,
-                            size: 18,
-                          ),
+                          child: const Icon(Icons.close_rounded,
+                              color: AppColors.textSecondary, size: 18),
                         ),
                       ),
-
                       const Spacer(),
-
-                      // اسم الفئة
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: AppColors.surfaceColor,
                           borderRadius: BorderRadius.circular(20),
@@ -352,175 +283,181 @@ class _GameScreenState extends State<GameScreen>
                         ),
                         child: Row(
                           children: [
-                            Text(
-                              widget.category?.emoji ?? '🎯',
-                              style: const TextStyle(fontSize: 14),
-                            ),
+                            Text(widget.category?.emoji ?? '🎯',
+                                style: const TextStyle(fontSize: 14)),
                             const SizedBox(width: 6),
-                            Text(
-                              widget.category?.title ?? 'عامة',
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                            Text(widget.category?.title ?? 'عامة',
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        'السؤال ${_currentIndex + 1}/${_questions.length}',
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // نقاط الفريقين
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+
+                      Expanded(
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: _selectedTeam == 'team1'
+                                    ? AppColors.correct.withOpacity(0.2)
+                                    : AppColors.surfaceColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _selectedTeam == 'team1'
+                                      ? AppColors.correct
+                                      : AppColors.correct.withOpacity(0.3),
+                                  width: _selectedTeam == 'team1' ? 2 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text('🔵',
+                                      style: TextStyle(fontSize: 16)),
+                                  const SizedBox(height: 2),
+                                  Text(widget.team1Name,
+                                      style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1),
+                                  const SizedBox(height: 2),
+                                  Text('$_team1Points نقطة',
+                                      style: const TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center),
+                                ],
                               ),
                             ),
+                            if (_pointsController.isAnimating &&
+                                _selectedTeam == 'team1')
+                              Positioned(
+                                top: -20, left: 0, right: 0,
+                                child: FadeTransition(
+                                  opacity: _pointsFade,
+                                  child: ScaleTransition(
+                                    scale: _pointsScale,
+                                    child: Text('+${question.points}',
+                                        style: const TextStyle(
+                                            color: AppColors.correct,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
 
-                      const Spacer(),
-
-                      // النقاط
-                      Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: AppColors.cardBorderGold),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.stars_rounded,
-                                  color: AppColors.primary,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$_totalPoints',
-                                  style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (_pointsController.isAnimating)
-                            Positioned(
-                              top: -20,
-                              right: 0,
-                              child: FadeTransition(
-                                opacity: _pointsFade,
-                                child: ScaleTransition(
-                                  scale: _pointsScale,
-                                  child: Text(
-                                    '+${question.points}',
-                                    style: const TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-
-                    ],
-                  ),
-                ),
-
-                // ==============================
-                // أسماء الفريقين
-                // ==============================
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.correct.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('🔵', style: TextStyle(fontSize: 12)),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  widget.team1Name,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text(
-                          'VS',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: Text('VS',
+                            style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold)),
                       ),
+
                       Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 6,
-                            horizontal: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceColor,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.wrong.withOpacity(0.5),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Text('🔴', style: TextStyle(fontSize: 12)),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  widget.team2Name,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: _selectedTeam == 'team2'
+                                    ? AppColors.correct.withOpacity(0.2)
+                                    : AppColors.surfaceColor,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _selectedTeam == 'team2'
+                                      ? AppColors.correct
+                                      : AppColors.wrong.withOpacity(0.3),
+                                  width: _selectedTeam == 'team2' ? 2 : 1,
                                 ),
                               ),
-                            ],
-                          ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text('🔴',
+                                      style: TextStyle(fontSize: 16)),
+                                  const SizedBox(height: 2),
+                                  Text(widget.team2Name,
+                                      style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1),
+                                  const SizedBox(height: 2),
+                                  Text('$_team2Points نقطة',
+                                      style: const TextStyle(
+                                          color: AppColors.wrong,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center),
+                                ],
+                              ),
+                            ),
+                            if (_pointsController.isAnimating &&
+                                _selectedTeam == 'team2')
+                              Positioned(
+                                top: -20, left: 0, right: 0,
+                                child: FadeTransition(
+                                  opacity: _pointsFade,
+                                  child: ScaleTransition(
+                                    scale: _pointsScale,
+                                    child: Text('+${question.points}',
+                                        style: const TextStyle(
+                                            color: AppColors.correct,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold),
+                                        textAlign: TextAlign.center),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
+
                     ],
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-                // شريط الوقت والأسئلة
+                // شريط الوقت
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
@@ -528,13 +465,11 @@ class _GameScreenState extends State<GameScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'السؤال ${_currentIndex + 1} من ${_questions.length}',
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
+                          Text('${question.points} نقطة',
+                              style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold)),
                           Row(
                             children: [
                               Icon(
@@ -550,30 +485,28 @@ class _GameScreenState extends State<GameScreen>
                               Text(
                                 _timesUp ? 'انتهى الوقت!' : '$_timeLeft ث',
                                 style: TextStyle(
-                                  color: _timesUp
-                                      ? AppColors.wrong
-                                      : _timerColor,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                    color: _timesUp
+                                        ? AppColors.wrong
+                                        : _timerColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 6),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           value: _timeProgress,
                           backgroundColor: AppColors.surfaceColor,
                           valueColor: AlwaysStoppedAnimation(
-                            _timesUp ? AppColors.wrong : _timerColor,
-                          ),
-                          minHeight: 4,
+                              _timesUp ? AppColors.wrong : _timerColor),
+                          minHeight: 5,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
@@ -588,7 +521,7 @@ class _GameScreenState extends State<GameScreen>
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
                 // بطاقة السؤال
                 Padding(
@@ -599,198 +532,183 @@ class _GameScreenState extends State<GameScreen>
                       position: _questionSlide,
                       child: Container(
                         width: double.infinity,
-                        constraints: const BoxConstraints(minHeight: 120),
+                        constraints: const BoxConstraints(minHeight: 130),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: _timesUp
-                                ? AppColors.wrong.withOpacity(0.5)
+                                ? AppColors.primary.withOpacity(0.8)
                                 : AppColors.cardBorderGold,
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: _timesUp
-                                  ? AppColors.wrong.withOpacity(0.1)
-                                  : AppColors.glowGold,
-                              blurRadius: 20,
-                            ),
+                                color: AppColors.glowGold, blurRadius: 20),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '${question.points} نقطة',
-                                style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              question.question,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                height: 1.6,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
+                        child: Text(
+                          question.question,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            height: 1.6,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // خيارات الإجابة
-                Expanded(
-                  child: Padding(
+                // الإجابة الصحيحة
+                if (_showAnswer)
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FadeTransition(
-                      opacity: _questionFade,
-                      child: GridView.builder(
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 1.8,
-                        ),
-                        itemCount: question.options.length,
-                        itemBuilder: (context, index) {
-                          final isCorrect = _showAnswer &&
-                              index == _questions[_currentIndex].correctIndex;
-                          final isWrong = _showAnswer &&
-                              index == _selectedIndex &&
-                              !_questions[_currentIndex].isCorrect(index);
-
-                          return GestureDetector(
-                            onTap: _timesUp ? null : () => _selectAnswer(index),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              decoration: BoxDecoration(
-                                color: _getAnswerColor(index),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: _getAnswerBorderColor(index),
-                                  width: _showAnswer && (isCorrect || isWrong)
-                                      ? 2
-                                      : 1,
-                                ),
-                                boxShadow: isCorrect
-                                    ? [
-                                  BoxShadow(
-                                    color:
-                                    AppColors.correct.withOpacity(0.3),
-                                    blurRadius: 12,
-                                  )
-                                ]
-                                    : isWrong
-                                    ? [
-                                  BoxShadow(
-                                    color: AppColors.wrong
-                                        .withOpacity(0.3),
-                                    blurRadius: 12,
-                                  )
-                                ]
-                                    : [],
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(10),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _showAnswer
-                                            ? (isCorrect
-                                            ? AppColors.correct
-                                            : isWrong
-                                            ? AppColors.wrong
-                                            : AppColors.surfaceColor)
-                                            : AppColors.surfaceColor,
-                                        border: Border.all(
-                                          color: _showAnswer
-                                              ? (isCorrect
-                                              ? AppColors.correct
-                                              : isWrong
-                                              ? AppColors.wrong
-                                              : AppColors.cardBorder)
-                                              : AppColors.cardBorder,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: _showAnswer && isCorrect
-                                            ? const Icon(Icons.check_rounded,
-                                            color: Colors.white, size: 14)
-                                            : _showAnswer && isWrong
-                                            ? const Icon(Icons.close_rounded,
-                                            color: Colors.white, size: 14)
-                                            : Text(
-                                          _getOptionLetter(index),
-                                          style: const TextStyle(
-                                            color:
-                                            AppColors.textSecondary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        question.options[index],
-                                        style: TextStyle(
-                                          color: _showAnswer
-                                              ? (isCorrect || isWrong
-                                              ? AppColors.textPrimary
-                                              : AppColors.textSecondary)
-                                              : AppColors.textPrimary,
-                                          fontSize: 13,
-                                          fontWeight: isCorrect || isWrong
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.correct.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                        border:
+                        Border.all(color: AppColors.correct, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                              color: AppColors.correct.withOpacity(0.2),
+                              blurRadius: 15),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36, height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.correct,
                             ),
-                          );
-                        },
+                            child: const Icon(Icons.check_rounded,
+                                color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('الإجابة الصحيحة',
+                                    style: TextStyle(
+                                        color: AppColors.correct,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1)),
+                                const SizedBox(height: 4),
+                                Text(question.answer ?? '—',
+                                    style: const TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
 
-                // ==============================
+                const Spacer(),
+
+                // أزرار الفريقين
+                if (_selectedTeam == null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Column(
+                      children: [
+                        Text(
+                          _showAnswer
+                              ? 'من أجاب صح؟'
+                              : 'اضغط على الفريق الذي أجاب',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 12,
+                              letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _selectWinner('team1'),
+                                child: Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color:
+                                    AppColors.correct.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                        color: AppColors.correct, width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text('🔵 ${widget.team1Name}',
+                                        style: const TextStyle(
+                                            color: AppColors.correct,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: () => _selectWinner('none'),
+                              child: Container(
+                                width: 52, height: 52,
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceColor,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: AppColors.cardBorder, width: 1),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => _selectWinner('team2'),
+                                child: Container(
+                                  height: 52,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.wrong.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                        color: AppColors.wrong, width: 1.5),
+                                  ),
+                                  child: Center(
+                                    child: Text('🔴 ${widget.team2Name}',
+                                        style: const TextStyle(
+                                            color: AppColors.wrong,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
                 // زر السؤال التالي
-                // ==============================
-                if (_showAnswer || _timesUp)
+                if (_selectedTeam != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: GestureDetector(
@@ -809,16 +727,14 @@ class _GameScreenState extends State<GameScreen>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.glowGold,
-                              blurRadius: 15,
-                            ),
+                                color: AppColors.glowGold, blurRadius: 15),
                           ],
                         ),
                         child: Center(
                           child: Text(
                             _currentIndex < _questions.length - 1
                                 ? 'السؤال التالي ←'
-                                : 'النتيجة النهائية 🏆',
+                                : 'ارجع للوحة 🎯',
                             style: const TextStyle(
                               color: AppColors.background,
                               fontSize: 16,
@@ -830,6 +746,8 @@ class _GameScreenState extends State<GameScreen>
                       ),
                     ),
                   ),
+
+                const SizedBox(height: 8),
 
               ],
             ),
@@ -850,19 +768,13 @@ class _GameScreenState extends State<GameScreen>
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: AppColors.cardBorderGold),
         ),
-        title: const Text(
-          'مغادرة اللعبة؟',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        content: const Text(
-          'سيتم فقدان تقدمك الحالي',
-          style: TextStyle(color: AppColors.textSecondary),
-          textAlign: TextAlign.center,
-        ),
+        title: const Text('مغادرة اللعبة؟',
+            style: TextStyle(
+                color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center),
+        content: const Text('سيتم فقدان تقدمك الحالي',
+            style: TextStyle(color: AppColors.textSecondary),
+            textAlign: TextAlign.center),
         actions: [
           Row(
             children: [
@@ -870,27 +782,25 @@ class _GameScreenState extends State<GameScreen>
                 child: TextButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    if (!_timesUp) _startTimer();
+                    if (!_timesUp && !_showAnswer) _startTimer();
                   },
-                  child: const Text(
-                    'تابع',
-                    style: TextStyle(color: AppColors.primary),
-                  ),
+                  child: const Text('تابع',
+                      style: TextStyle(color: AppColors.primary)),
                 ),
               ),
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    Navigator.pop(context);
+                    Navigator.pop(context, {
+                      'team1': _team1Points,
+                      'team2': _team2Points,
+                    });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.wrong.withOpacity(0.8),
-                  ),
-                  child: const Text(
-                    'خروج',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                      backgroundColor: AppColors.wrong.withOpacity(0.8)),
+                  child: const Text('خروج',
+                      style: TextStyle(color: Colors.white)),
                 ),
               ),
             ],

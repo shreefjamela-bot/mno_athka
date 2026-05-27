@@ -2,28 +2,20 @@
 // نموذج السؤال
 // اسم الملف: question_model.dart
 // المكان: lib/data/models/
-//
-// هذا الكلاس يحدد شكل كل سؤال في اللعبة
-// كل سؤال عنده: نص، خيارات، إجابة، نقاط، وقت
 // ==============================
 
 class QuestionModel {
 
-  // ==============================
-  // المتغيرات — بيانات السؤال
-  // final = ما يتغير بعد ما يتحدد
-  // ==============================
-
-  // رقم تعريفي فريد لكل سؤال
+  // رقم تعريفي فريد
   final String id;
 
   // نص السؤال
   final String question;
 
-  // قائمة الخيارات — دايماً ٤ خيارات
+  // قائمة الخيارات — فاضية للأسئلة المفتوحة
   final List<String> options;
 
-  // رقم الإجابة الصحيحة — ٠، ١، ٢، أو ٣
+  // رقم الإجابة الصحيحة — للأسئلة ذات الخيارات
   final int correctIndex;
 
   // المستوى — ١، ٢، أو ٣
@@ -32,23 +24,24 @@ class QuestionModel {
   // النقاط — ٢٠٠، ٤٠٠، أو ٦٠٠
   final int points;
 
-  // رقم القالب — مثل: جغرافيا، تاريخ
+  // رقم الفئة
   final String categoryId;
 
-  // رابط صورة — اختياري (مو كل سؤال عنده صورة)
-  // String? = يقدر يكون null
+  // رابط صورة — اختياري
   final String? imageUrl;
 
   // رابط فيديو — اختياري
   final String? videoUrl;
 
-  // الوقت بالثواني — افتراضي ١٢٠ ثانية
+  // الوقت بالثواني — افتراضي ١٢٠
   final int timeLimitSeconds;
 
   // ==============================
-  // الكونستراكتر — طريقة إنشاء السؤال
-  // required = لازم تحطه
+  // الإجابة النصية — للأسئلة المفتوحة
+  // مثل: 'أبو بكر الصديق'
   // ==============================
+  final String? answer;
+
   const QuestionModel({
     required this.id,
     required this.question,
@@ -57,35 +50,34 @@ class QuestionModel {
     required this.level,
     required this.points,
     required this.categoryId,
-    this.imageUrl,        // اختياري
-    this.videoUrl,        // اختياري
-    this.timeLimitSeconds = 120, // افتراضي ١٢٠ ثانية
+    this.imageUrl,
+    this.videoUrl,
+    this.timeLimitSeconds = 120,
+    this.answer, // اختياري
   });
 
   // ==============================
-  // دالة مساعدة
-  // ترجع النقاط بناءً على المستوى
+  // هل السؤال مفتوح؟
+  // يعني ما عنده خيارات
   // ==============================
-  static int getPointsByLevel(int level) {
-    // switch = اختار حسب القيمة
-    switch (level) {
-      case 1:
-        return 200; // المستوى الأول
-      case 2:
-        return 400; // المستوى الثاني
-      case 3:
-        return 600; // المستوى الثالث
-      default:
-        return 200; // افتراضي
-    }
-  }
+  bool get isOpenQuestion => options.isEmpty;
 
   // ==============================
   // دالة للتحقق من الإجابة
-  // تأخذ رقم الخيار وترجع true أو false
   // ==============================
   bool isCorrect(int selectedIndex) {
-    // == للمقارنة بين قيمتين
     return selectedIndex == correctIndex;
+  }
+
+  // ==============================
+  // نقاط حسب المستوى
+  // ==============================
+  static int getPointsByLevel(int level) {
+    switch (level) {
+      case 1: return 200;
+      case 2: return 400;
+      case 3: return 600;
+      default: return 200;
+    }
   }
 }

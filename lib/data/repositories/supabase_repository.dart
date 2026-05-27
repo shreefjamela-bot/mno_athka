@@ -28,7 +28,6 @@ class SupabaseRepository {
         emoji: row['emoji'],
         description: row['description'] ?? '',
         isLocked: row['is_locked'] ?? false,
-        // نجيب image_url — يقدر يكون null
         imageUrl: row['image_url'],
       )).toList();
 
@@ -52,18 +51,29 @@ class SupabaseRepository {
           .eq('level', level)
           .order('id');
 
-      return response.map((row) => QuestionModel(
-        id: row['id'],
-        categoryId: row['category_id'],
-        level: row['level'],
-        points: row['points'],
-        question: row['question'],
-        options: List<String>.from(row['options']),
-        correctIndex: row['correct_index'],
-        imageUrl: row['image_url'],
-        videoUrl: row['video_url'],
-        timeLimitSeconds: row['time_limit_seconds'] ?? 120,
-      )).toList();
+      return response.map((row) {
+        // options قد تكون فاضية للأسئلة المفتوحة
+        final rawOptions = row['options'];
+        List<String> options = [];
+        if (rawOptions != null) {
+          options = List<String>.from(rawOptions);
+        }
+
+        return QuestionModel(
+          id: row['id'],
+          categoryId: row['category_id'],
+          level: row['level'],
+          points: row['points'],
+          question: row['question'],
+          options: options,
+          correctIndex: row['correct_index'] ?? 0,
+          imageUrl: row['image_url'],
+          videoUrl: row['video_url'],
+          timeLimitSeconds: row['time_limit_seconds'] ?? 120,
+          // الإجابة النصية للأسئلة المفتوحة
+          answer: row['answer'],
+        );
+      }).toList();
 
     } catch (e) {
       return [];

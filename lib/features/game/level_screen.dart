@@ -8,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../data/models/category_model.dart';
 import 'game_screen.dart';
+import 'team_selection_screen.dart';
 
 class LevelScreen extends StatefulWidget {
   final CategoryModel category;
@@ -23,9 +24,6 @@ class LevelScreen extends StatefulWidget {
 
 class _LevelScreenState extends State<LevelScreen> {
 
-  // ==============================
-  // أسماء الفريقين
-  // ==============================
   final _team1Controller = TextEditingController(text: 'الفريق الأول');
   final _team2Controller = TextEditingController(text: 'الفريق الثاني');
 
@@ -52,7 +50,8 @@ class _LevelScreenState extends State<LevelScreen> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios,
+              color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -63,9 +62,7 @@ class _LevelScreenState extends State<LevelScreen> {
 
             const SizedBox(height: AppSizes.spaceMD),
 
-            // ==============================
-            // صورة أو أيقونة الفئة
-            // ==============================
+            // صورة الفئة
             Container(
               width: 100,
               height: 100,
@@ -73,14 +70,10 @@ class _LevelScreenState extends State<LevelScreen> {
                 shape: BoxShape.circle,
                 color: AppColors.primary.withOpacity(0.15),
                 border: Border.all(
-                  color: AppColors.cardBorderGold,
-                  width: 2,
-                ),
+                    color: AppColors.cardBorderGold, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.glowGold,
-                    blurRadius: 20,
-                  ),
+                      color: AppColors.glowGold, blurRadius: 20),
                 ],
               ),
               child: ClipOval(
@@ -89,24 +82,19 @@ class _LevelScreenState extends State<LevelScreen> {
                   widget.category.imageUrl!,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Center(
-                    child: Text(
-                      widget.category.emoji,
-                      style: const TextStyle(fontSize: 40),
-                    ),
+                    child: Text(widget.category.emoji,
+                        style: const TextStyle(fontSize: 40)),
                   ),
                 )
                     : Center(
-                  child: Text(
-                    widget.category.emoji,
-                    style: const TextStyle(fontSize: 40),
-                  ),
+                  child: Text(widget.category.emoji,
+                      style: const TextStyle(fontSize: 40)),
                 ),
               ),
             ),
 
             const SizedBox(height: AppSizes.spaceMD),
 
-            // اسم الفئة
             Text(
               widget.category.title,
               style: const TextStyle(
@@ -129,9 +117,7 @@ class _LevelScreenState extends State<LevelScreen> {
 
             const SizedBox(height: AppSizes.spaceXXL),
 
-            // ==============================
             // خانات أسماء الفريقين
-            // ==============================
             Container(
               padding: const EdgeInsets.all(AppSizes.spaceMD),
               decoration: BoxDecoration(
@@ -153,23 +139,18 @@ class _LevelScreenState extends State<LevelScreen> {
 
                   const SizedBox(height: AppSizes.spaceMD),
 
-                  // خانة الفريق الأول
                   TextField(
                     controller: _team1Controller,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
-                      prefixIcon: const Text(
-                        '🔵',
-                        style: TextStyle(fontSize: 20),
-                      ),
+                      prefixIcon: const Text('🔵',
+                          style: TextStyle(fontSize: 20)),
                       labelText: 'اسم الفريق الأول',
                       labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
+                          color: AppColors.textSecondary),
                       filled: true,
                       fillColor: AppColors.surfaceColor,
                       border: OutlineInputBorder(
@@ -178,45 +159,35 @@ class _LevelScreenState extends State<LevelScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
-                        ),
+                        borderSide:
+                        const BorderSide(color: AppColors.primary),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: AppSizes.spaceMD),
 
-                  // VS
-                  const Text(
-                    'VS',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 3,
-                    ),
-                  ),
+                  const Text('VS',
+                      style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 3)),
 
                   const SizedBox(height: AppSizes.spaceMD),
 
-                  // خانة الفريق الثاني
                   TextField(
                     controller: _team2Controller,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.bold,
-                    ),
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
-                      prefixIcon: const Text(
-                        '🔴',
-                        style: TextStyle(fontSize: 20),
-                      ),
+                      prefixIcon: const Text('🔴',
+                          style: TextStyle(fontSize: 20)),
                       labelText: 'اسم الفريق الثاني',
                       labelStyle: const TextStyle(
-                        color: AppColors.textSecondary,
-                      ),
+                          color: AppColors.textSecondary),
                       filled: true,
                       fillColor: AppColors.surfaceColor,
                       border: OutlineInputBorder(
@@ -225,9 +196,8 @@ class _LevelScreenState extends State<LevelScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: AppColors.primary,
-                        ),
+                        borderSide:
+                        const BorderSide(color: AppColors.primary),
                       ),
                     ),
                   ),
@@ -239,8 +209,90 @@ class _LevelScreenState extends State<LevelScreen> {
             const SizedBox(height: AppSizes.spaceXXL),
 
             // ==============================
-            // أزرار المستويات
+            // زر اللعب الجماعي — نظام سين جيم
             // ==============================
+            GestureDetector(
+              onTap: () {
+                final t1 = _team1Controller.text.trim().isEmpty
+                    ? 'الفريق الأول'
+                    : _team1Controller.text.trim();
+                final t2 = _team2Controller.text.trim().isEmpty
+                    ? 'الفريق الثاني'
+                    : _team2Controller.text.trim();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TeamSelectionScreen(
+                      team1Name: t1,
+                      team2Name: t2,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                height: 58,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [
+                      AppColors.primaryDark,
+                      AppColors.primary,
+                      AppColors.primaryLight,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                        color: AppColors.glowGold, blurRadius: 20),
+                  ],
+                ),
+                child: const Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🎮', style: TextStyle(fontSize: 20)),
+                      SizedBox(width: 8),
+                      Text(
+                        'لعب جماعي — كل فريق يختار فئاته',
+                        style: TextStyle(
+                          color: AppColors.background,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: AppSizes.spaceMD),
+
+            // خط فاصل
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                      height: 1, color: AppColors.cardBorder),
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('أو العب فئة واحدة',
+                      style: TextStyle(
+                          color: AppColors.textHint, fontSize: 11)),
+                ),
+                Expanded(
+                  child: Container(
+                      height: 1, color: AppColors.cardBorder),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: AppSizes.spaceMD),
+
+            // أزرار المستويات
             const Text(
               'اختر المستوى',
               style: TextStyle(
@@ -347,10 +399,7 @@ class _LevelButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color, width: 1),
           boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.2),
-              blurRadius: 8,
-            ),
+            BoxShadow(color: color.withOpacity(0.2), blurRadius: 8),
           ],
         ),
         child: Row(
@@ -369,9 +418,8 @@ class _LevelButton extends StatelessWidget {
             ),
             Container(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.spaceMD,
-                vertical: AppSizes.spaceSM,
-              ),
+                  horizontal: AppSizes.spaceMD,
+                  vertical: AppSizes.spaceSM),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(20),

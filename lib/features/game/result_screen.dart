@@ -17,6 +17,8 @@ class ResultScreen extends StatefulWidget {
   final int level;
   final String team1Name;
   final String team2Name;
+  final int team1Points;
+  final int team2Points;
 
   const ResultScreen({
     super.key,
@@ -27,6 +29,8 @@ class ResultScreen extends StatefulWidget {
     required this.level,
     this.team1Name = 'الفريق الأول',
     this.team2Name = 'الفريق الثاني',
+    this.team1Points = 0,
+    this.team2Points = 0,
   });
 
   @override
@@ -57,7 +61,8 @@ class _ResultScreenState extends State<ResultScreen>
           parent: _celebrationController, curve: Curves.elasticOut),
     );
     _celebrationFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _celebrationController, curve: Curves.easeOut),
+      CurvedAnimation(
+          parent: _celebrationController, curve: Curves.easeOut),
     );
     _celebrationController.forward();
   }
@@ -75,25 +80,11 @@ class _ResultScreenState extends State<ResultScreen>
   }
 
   // ==============================
-  // نحدد الفريق الفائز حسب النقاط
-  // الفريق ١ يلعب أسئلة فردية
-  // الفريق ٢ يلعب أسئلة زوجية
+  // الفريق الفائز حسب النقاط الحقيقية
   // ==============================
   String _getWinnerName() {
-    // نقسم الأسئلة — فردية للفريق ١، زوجية للفريق ٢
-    int team1Points = 0;
-    int team2Points = 0;
-
-    for (int i = 0; i < widget.totalQuestions; i++) {
-      if (i % 2 == 0) {
-        team1Points += widget.totalPoints ~/ widget.totalQuestions;
-      } else {
-        team2Points += widget.totalPoints ~/ widget.totalQuestions;
-      }
-    }
-
-    if (team1Points > team2Points) return widget.team1Name;
-    if (team2Points > team1Points) return widget.team2Name;
+    if (widget.team1Points > widget.team2Points) return widget.team1Name;
+    if (widget.team2Points > widget.team1Points) return widget.team2Name;
     return 'تعادل';
   }
 
@@ -106,6 +97,7 @@ class _ResultScreenState extends State<ResultScreen>
   @override
   Widget build(BuildContext context) {
     final isLastLevel = widget.level == 3;
+    final winner = _getWinnerName();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -118,7 +110,7 @@ class _ResultScreenState extends State<ResultScreen>
               const SizedBox(height: AppSizes.spaceLG),
 
               // ==============================
-              // أيقونة النتيجة مع أنيميشن
+              // أيقونة النتيجة
               // ==============================
               ScaleTransition(
                 scale: _celebrationScale,
@@ -136,15 +128,12 @@ class _ResultScreenState extends State<ResultScreen>
                         ],
                       ),
                       border: Border.all(
-                        color: AppColors.cardBorderGold,
-                        width: 2,
-                      ),
+                          color: AppColors.cardBorderGold, width: 2),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.glowGold,
-                          blurRadius: 30,
-                          spreadRadius: 5,
-                        ),
+                            color: AppColors.glowGold,
+                            blurRadius: 30,
+                            spreadRadius: 5),
                       ],
                     ),
                     child: Center(
@@ -160,14 +149,13 @@ class _ResultScreenState extends State<ResultScreen>
               const SizedBox(height: AppSizes.spaceLG),
 
               // ==============================
-              // رسالة مبروك للفريق الفائز
+              // رسالة الفائز
               // ==============================
               FadeTransition(
                 opacity: _celebrationFade,
                 child: Column(
                   children: [
                     if (isLastLevel) ...[
-                      // رسالة خاصة للمستوى الثالث
                       ShaderMask(
                         shaderCallback: (bounds) => const LinearGradient(
                           colors: [
@@ -187,20 +175,18 @@ class _ResultScreenState extends State<ResultScreen>
                         ),
                       ),
                       const SizedBox(height: 8),
-                      Text(
+                      const Text(
                         'الفريق الفائز',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: AppSizes.fontMD,
+                          fontSize: 14,
                           letterSpacing: 1,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                            horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [
@@ -211,15 +197,13 @@ class _ResultScreenState extends State<ResultScreen>
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.glowGold,
-                              blurRadius: 20,
-                            ),
+                                color: AppColors.glowGold, blurRadius: 20),
                           ],
                         ),
                         child: Text(
-                          _getWinnerName() == 'تعادل'
+                          winner == 'تعادل'
                               ? '🤝 تعادل!'
-                              : '🏆 ${_getWinnerName()}',
+                              : '🏆 $winner',
                           style: const TextStyle(
                             color: AppColors.background,
                             fontSize: 22,
@@ -229,13 +213,10 @@ class _ResultScreenState extends State<ResultScreen>
                         ),
                       ),
                     ] else ...[
-                      // رسالة للمستوى الأول والثاني
                       Text(
                         '${widget.category.emoji} ${widget.category.title}',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: AppSizes.fontMD,
-                        ),
+                        style: const TextStyle(
+                            color: AppColors.textSecondary, fontSize: 14),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -255,7 +236,7 @@ class _ResultScreenState extends State<ResultScreen>
               const SizedBox(height: AppSizes.spaceXXL),
 
               // ==============================
-              // بطاقة النقاط والإحصائيات
+              // بطاقة نقاط الفريقين
               // ==============================
               Container(
                 width: double.infinity,
@@ -264,47 +245,179 @@ class _ResultScreenState extends State<ResultScreen>
                   color: AppColors.cardBackground,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.cardBorderGold,
-                    width: 1,
-                  ),
+                      color: AppColors.cardBorderGold, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.glowGold,
-                      blurRadius: 15,
-                    ),
+                        color: AppColors.glowGold, blurRadius: 15),
                   ],
                 ),
                 child: Column(
                   children: [
 
-                    // النقاط الكلية
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [
-                          AppColors.primaryLight,
-                          AppColors.primary,
-                        ],
-                      ).createShader(bounds),
-                      child: Text(
-                        '${widget.totalPoints}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 72,
-                          fontWeight: FontWeight.bold,
+                    // نقاط الفريقين
+                    Row(
+                      children: [
+
+                        // الفريق ١
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: winner == widget.team1Name
+                                  ? AppColors.correct.withOpacity(0.15)
+                                  : AppColors.surfaceColor,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: winner == widget.team1Name
+                                    ? AppColors.correct
+                                    : AppColors.cardBorder,
+                                width: winner == widget.team1Name ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🔵',
+                                    style: TextStyle(fontSize: 24)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  widget.team1Name,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                ShaderMask(
+                                  shaderCallback: (bounds) =>
+                                      const LinearGradient(
+                                        colors: [
+                                          AppColors.primaryLight,
+                                          AppColors.primary,
+                                        ],
+                                      ).createShader(bounds),
+                                  child: Text(
+                                    '${widget.team1Points}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const Text(
+                                  'نقطة',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                if (winner == widget.team1Name)
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 6),
+                                    child: Text('🏆 فائز',
+                                        style: TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        )),
+                                  ),
+                              ],
+                            ),
+                          ),
                         ),
-                      ),
+
+                        // VS
+                        Padding(
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'VS',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        // الفريق ٢
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: winner == widget.team2Name
+                                  ? AppColors.correct.withOpacity(0.15)
+                                  : AppColors.surfaceColor,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: winner == widget.team2Name
+                                    ? AppColors.correct
+                                    : AppColors.cardBorder,
+                                width: winner == widget.team2Name ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text('🔴',
+                                    style: TextStyle(fontSize: 24)),
+                                const SizedBox(height: 6),
+                                Text(
+                                  widget.team2Name,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                ShaderMask(
+                                  shaderCallback: (bounds) =>
+                                      const LinearGradient(
+                                        colors: [
+                                          AppColors.primaryLight,
+                                          AppColors.primary,
+                                        ],
+                                      ).createShader(bounds),
+                                  child: Text(
+                                    '${widget.team2Points}',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const Text(
+                                  'نقطة',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                if (winner == widget.team2Name)
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 6),
+                                    child: Text('🏆 فائز',
+                                        style: TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        )),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      ],
                     ),
 
-                    const Text(
-                      'نقطة',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontSize: AppSizes.fontLG,
-                        letterSpacing: 2,
-                      ),
-                    ),
-
-                    const SizedBox(height: AppSizes.spaceLG),
+                    const SizedBox(height: AppSizes.spaceMD),
 
                     // خط فاصل
                     Container(
@@ -320,24 +433,17 @@ class _ResultScreenState extends State<ResultScreen>
                       ),
                     ),
 
-                    const SizedBox(height: AppSizes.spaceLG),
+                    const SizedBox(height: AppSizes.spaceMD),
 
                     // إحصائيات
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _StatItem(
-                          label: 'صحيح',
-                          value: '${widget.correctAnswers}',
-                          color: AppColors.correct,
-                          emoji: '✅',
-                        ),
-                        _StatItem(
-                          label: 'خاطئ',
-                          value:
-                          '${widget.totalQuestions - widget.correctAnswers}',
-                          color: AppColors.wrong,
-                          emoji: '❌',
+                          label: 'الأسئلة',
+                          value: '${widget.totalQuestions}',
+                          color: AppColors.primary,
+                          emoji: '❓',
                         ),
                         _StatItem(
                           label: 'المستوى',
@@ -345,63 +451,13 @@ class _ResultScreenState extends State<ResultScreen>
                           color: _getLevelColor(),
                           emoji: '⭐',
                         ),
+                        _StatItem(
+                          label: 'الفئة',
+                          value: widget.category.emoji,
+                          color: AppColors.secondary,
+                          emoji: '',
+                        ),
                       ],
-                    ),
-
-                    const SizedBox(height: AppSizes.spaceMD),
-
-                    // ==============================
-                    // أسماء الفريقين
-                    // ==============================
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Column(
-                            children: [
-                              const Text('🔵',
-                                  style: TextStyle(fontSize: 20)),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.team1Name,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            'VS',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              const Text('🔴',
-                                  style: TextStyle(fontSize: 20)),
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.team2Name,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
 
                   ],
@@ -410,7 +466,7 @@ class _ResultScreenState extends State<ResultScreen>
 
               const SizedBox(height: AppSizes.spaceXXL),
 
-              // زر العب مرة ثانية
+              // زر جولة جديدة
               GestureDetector(
                 onTap: () {
                   Navigator.pop(context);
@@ -430,9 +486,7 @@ class _ResultScreenState extends State<ResultScreen>
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.glowGold,
-                        blurRadius: 15,
-                      ),
+                          color: AppColors.glowGold, blurRadius: 15),
                     ],
                   ),
                   child: const Center(
@@ -504,16 +558,18 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 24)),
+        Text(emoji.isEmpty ? value : emoji,
+            style: const TextStyle(fontSize: 24)),
         const SizedBox(height: AppSizes.spaceXS),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: AppSizes.fontXXL,
-            fontWeight: FontWeight.bold,
+        if (emoji.isNotEmpty)
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: AppSizes.fontXXL,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
         Text(
           label,
           style: const TextStyle(
