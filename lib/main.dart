@@ -8,7 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
 import 'core/constants/app_colors.dart';
 import 'core/supabase_config.dart';
-import 'features/categories/categories_screen.dart';
+import 'features/game/draft_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/leaderboard_screen.dart';
 
@@ -81,7 +81,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
 
                   // ==============================
-                  // صورة شخص يفكر ويتأمل
+                  // أيقونة التفكير
                   // ==============================
                   Container(
                     width: 160,
@@ -106,7 +106,6 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // شخص يفكر
                     child: const Icon(
                       Icons.psychology_rounded,
                       size: 90,
@@ -117,7 +116,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(height: 28),
 
                   // ==============================
-                  // اسم اللعبة — سطرين
+                  // اسم اللعبة
                   // ==============================
                   ShaderMask(
                     shaderCallback: (bounds) => const LinearGradient(
@@ -140,7 +139,6 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 4),
 
-                  // السطر الثاني من الاسم
                   const Text(
                     'واجهني ونشوف منو الأذكى',
                     style: TextStyle(
@@ -153,9 +151,6 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // ==============================
-                  // جملة التحدي
-                  // ==============================
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 32),
                     child: Text(
@@ -172,9 +167,6 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 16),
 
-                  // ==============================
-                  // جملة الترحيب
-                  // ==============================
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 24),
                     padding: const EdgeInsets.all(16),
@@ -213,12 +205,12 @@ class HomeScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
 
-                    // زر ابدأ اللعب
+                    // ── زر ابدأ اللعب → DraftScreen ──
                     GestureDetector(
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const CategoriesScreen(),
+                          builder: (context) => const DraftScreen(),
                         ),
                       ),
                       child: Container(

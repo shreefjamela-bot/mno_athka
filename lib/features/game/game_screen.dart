@@ -17,6 +17,9 @@ class GameScreen extends StatefulWidget {
   final CategoryModel? category;
   final String team1Name;
   final String team2Name;
+  final int timeLimit;        // ✅ جديد — ضغط الوقت
+  final int bonusPoints;      // ✅ جديد — سؤال الألف
+  final bool isDoubleQuestion; // ✅ جديد — سؤال مزدوج
 
   const GameScreen({
     super.key,
@@ -24,6 +27,9 @@ class GameScreen extends StatefulWidget {
     this.category,
     this.team1Name = 'الفريق الأول',
     this.team2Name = 'الفريق الثاني',
+    this.timeLimit = 120,
+    this.bonusPoints = 0,
+    this.isDoubleQuestion = false,
   });
 
   @override
@@ -37,7 +43,7 @@ class _GameScreenState extends State<GameScreen>
   int _currentIndex = 0;
   int _team1Points = 0;
   int _team2Points = 0;
-  int _timeLeft = 120;
+  late int _timeLeft;
   Timer? _timer;
   bool _isLoading = true;
   bool _timesUp = false;
@@ -53,9 +59,13 @@ class _GameScreenState extends State<GameScreen>
   late Animation<double> _pointsFade;
   late Animation<double> _pointsScale;
 
+  // للسؤال المزدوج
+  bool _doubleQuestionAnswered = false;
+
   @override
   void initState() {
     super.initState();
+    _timeLeft = widget.timeLimit;
     _initAnimations();
     _loadQuestions();
   }
@@ -66,8 +76,7 @@ class _GameScreenState extends State<GameScreen>
       duration: const Duration(milliseconds: 500),
     );
     _questionFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-          parent: _questionController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _questionController, curve: Curves.easeOut),
     );
     _questionSlide = Tween<Offset>(
       begin: const Offset(0, 0.1),
@@ -80,12 +89,10 @@ class _GameScreenState extends State<GameScreen>
       duration: const Duration(milliseconds: 800),
     );
     _pointsFade = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(
-          parent: _pointsController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _pointsController, curve: Curves.easeOut),
     );
     _pointsScale = Tween<double>(begin: 1, end: 1.8).animate(
-      CurvedAnimation(
-          parent: _pointsController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _pointsController, curve: Curves.easeOut),
     );
   }
 
@@ -122,7 +129,7 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _startTimer() {
-    _timeLeft = 120;
+    _timeLeft = widget.timeLimit; // ✅ يستخدم timeLimit بدل 120 ثابت
     _timesUp = false;
     _showAnswer = false;
     _selectedTeam = null;
@@ -140,7 +147,6 @@ class _GameScreenState extends State<GameScreen>
     });
   }
 
-  // ← الدالة المعدلة
   Future<void> _playApplause() async {
     try {
       await _audioPlayer.setSource(AssetSource('sounds/applause.wav'));
@@ -150,15 +156,27 @@ class _GameScreenState extends State<GameScreen>
     }
   }
 
+  // ✅ النقاط الفعلية — bonusPoints يتجاهل نقاط السؤال الأصلية
+  int get _effectivePoints {
+    if (widget.bonusPoints > 0) return widget.bonusPoints;
+    return _questions.isNotEmpty ? _questions[_currentIndex].points : 0;
+  }
+
   void _selectWinner(String team) {
     if (_selectedTeam != null) return;
+
+    // ✅ سؤال مزدوج — أول فريق يضغط يأخذ النقاط كاملة
+    if (widget.isDoubleQuestion && !_doubleQuestionAnswered) {
+      _doubleQuestionAnswered = true;
+    }
+
     _timer?.cancel();
 
     setState(() {
       _selectedTeam = team;
       _showAnswer = true;
       _timesUp = true;
-      final points = _questions[_currentIndex].points;
+      final points = _effectivePoints;
 
       if (team == 'team1') {
         _team1Points += points;
@@ -180,11 +198,12 @@ class _GameScreenState extends State<GameScreen>
     });
   }
 
-  double get _timeProgress => _timeLeft / 120;
+  double get _timeProgress => _timeLeft / widget.timeLimit;
 
   Color get _timerColor {
-    if (_timeLeft > 60) return AppColors.correct;
-    if (_timeLeft > 20) return AppColors.primary;
+    final ratio = _timeLeft / widget.timeLimit;
+    if (ratio > 0.5) return AppColors.correct;
+    if (ratio > 0.2) return AppColors.primary;
     return AppColors.wrong;
   }
 
@@ -219,8 +238,7 @@ class _GameScreenState extends State<GameScreen>
               const Text('😕', style: TextStyle(fontSize: 60)),
               const SizedBox(height: 16),
               const Text('ما في أسئلة لهذا المستوى',
-                  style: TextStyle(
-                      color: AppColors.textPrimary, fontSize: 18)),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 18)),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, {
@@ -263,7 +281,7 @@ class _GameScreenState extends State<GameScreen>
             Column(
               children: [
 
-                // الهيدر
+                // ── الهيدر ──────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
@@ -276,46 +294,96 @@ class _GameScreenState extends State<GameScreen>
                           decoration: BoxDecoration(
                             color: AppColors.surfaceColor,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: AppColors.cardBorder),
+                            border: Border.all(color: AppColors.cardBorder),
                           ),
                           child: const Icon(Icons.close_rounded,
-                              color: AppColors.textSecondary,
-                              size: 18),
+                              color: AppColors.textSecondary, size: 18),
                         ),
                       ),
                       const Spacer(),
+
+                      // ✅ بادج التحدي الخاص
+                      if (widget.isDoubleQuestion)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF8B2635).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFF8B2635), width: 1.5),
+                          ),
+                          child: const Text('💥 سؤال مزدوج',
+                              style: TextStyle(
+                                  color: Color(0xFF8B2635),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
+                        )
+                      else if (widget.bonusPoints > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF9B59B6).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: const Color(0xFF9B59B6), width: 1.5),
+                          ),
+                          child: Text('🌟 ${widget.bonusPoints} نقطة',
+                              style: const TextStyle(
+                                  color: Color(0xFF9B59B6),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold)),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border:
+                            Border.all(color: AppColors.cardBorderGold),
+                          ),
+                          child: Row(
+                            children: [
+                              Text(widget.category?.emoji ?? '🎯',
+                                  style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(
+                                widget.category?.title ?? 'عامة',
+                                style: const TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const Spacer(),
+
+                      // ✅ بادج الوقت — يتغير لون لما يكون 15 ثانية
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceColor,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: AppColors.cardBorderGold),
+                          color: widget.timeLimit <= 15
+                              ? AppColors.wrong.withOpacity(0.15)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(
-                          children: [
-                            Text(widget.category?.emoji ?? '🎯',
-                                style:
-                                const TextStyle(fontSize: 14)),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.category?.title ?? 'عامة',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ],
+                        child: Text(
+                          widget.timeLimit <= 15
+                              ? '⏱️ ${widget.timeLimit}ث'
+                              : 'سؤال ${widget.level == 1 ? "٢٠٠" : widget.level == 2 ? "٤٠٠" : "٦٠٠"}',
+                          style: TextStyle(
+                              color: widget.timeLimit <= 15
+                                  ? AppColors.wrong
+                                  : AppColors.textSecondary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        'سؤال ${widget.level == 1 ? "٢٠٠" : widget.level == 2 ? "٤٠٠" : "٦٠٠"}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12),
                       ),
                     ],
                   ),
@@ -323,7 +391,7 @@ class _GameScreenState extends State<GameScreen>
 
                 const SizedBox(height: 10),
 
-                // نقاط الفريقين
+                // ── نقاط الفريقين ────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
@@ -338,40 +406,29 @@ class _GameScreenState extends State<GameScreen>
                                   vertical: 8, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: _selectedTeam == 'team1'
-                                    ? AppColors.correct
-                                    .withOpacity(0.2)
+                                    ? AppColors.correct.withOpacity(0.2)
                                     : AppColors.surfaceColor,
-                                borderRadius:
-                                BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _selectedTeam == 'team1'
                                       ? AppColors.correct
-                                      : AppColors.correct
-                                      .withOpacity(0.3),
-                                  width: _selectedTeam == 'team1'
-                                      ? 2
-                                      : 1,
+                                      : AppColors.correct.withOpacity(0.3),
+                                  width: _selectedTeam == 'team1' ? 2 : 1,
                                 ),
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                MainAxisAlignment.center,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   const Text('🔵',
-                                      style:
-                                      TextStyle(fontSize: 16)),
+                                      style: TextStyle(fontSize: 16)),
                                   const SizedBox(height: 2),
                                   Text(widget.team1Name,
                                       style: const TextStyle(
-                                          color:
-                                          AppColors.textPrimary,
+                                          color: AppColors.textPrimary,
                                           fontSize: 11,
-                                          fontWeight:
-                                          FontWeight.bold),
-                                      overflow:
-                                      TextOverflow.ellipsis,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,
                                       maxLines: 1),
                                   const SizedBox(height: 2),
@@ -379,8 +436,7 @@ class _GameScreenState extends State<GameScreen>
                                       style: const TextStyle(
                                           color: AppColors.correct,
                                           fontSize: 13,
-                                          fontWeight:
-                                          FontWeight.bold),
+                                          fontWeight: FontWeight.bold),
                                       textAlign: TextAlign.center),
                                 ],
                               ),
@@ -396,14 +452,13 @@ class _GameScreenState extends State<GameScreen>
                                   child: ScaleTransition(
                                     scale: _pointsScale,
                                     child: Text(
-                                        '+${question.points}',
-                                        style: const TextStyle(
-                                            color: AppColors.correct,
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center),
+                                      '+$_effectivePoints',
+                                      style: const TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -412,8 +467,7 @@ class _GameScreenState extends State<GameScreen>
                       ),
 
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: const Text('VS',
                             style: TextStyle(
                                 color: AppColors.primary,
@@ -430,40 +484,29 @@ class _GameScreenState extends State<GameScreen>
                                   vertical: 8, horizontal: 8),
                               decoration: BoxDecoration(
                                 color: _selectedTeam == 'team2'
-                                    ? AppColors.correct
-                                    .withOpacity(0.2)
+                                    ? AppColors.correct.withOpacity(0.2)
                                     : AppColors.surfaceColor,
-                                borderRadius:
-                                BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: _selectedTeam == 'team2'
                                       ? AppColors.correct
-                                      : AppColors.wrong
-                                      .withOpacity(0.3),
-                                  width: _selectedTeam == 'team2'
-                                      ? 2
-                                      : 1,
+                                      : AppColors.wrong.withOpacity(0.3),
+                                  width: _selectedTeam == 'team2' ? 2 : 1,
                                 ),
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                MainAxisAlignment.center,
-                                crossAxisAlignment:
-                                CrossAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   const Text('🔴',
-                                      style:
-                                      TextStyle(fontSize: 16)),
+                                      style: TextStyle(fontSize: 16)),
                                   const SizedBox(height: 2),
                                   Text(widget.team2Name,
                                       style: const TextStyle(
-                                          color:
-                                          AppColors.textPrimary,
+                                          color: AppColors.textPrimary,
                                           fontSize: 11,
-                                          fontWeight:
-                                          FontWeight.bold),
-                                      overflow:
-                                      TextOverflow.ellipsis,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.center,
                                       maxLines: 1),
                                   const SizedBox(height: 2),
@@ -471,8 +514,7 @@ class _GameScreenState extends State<GameScreen>
                                       style: const TextStyle(
                                           color: AppColors.wrong,
                                           fontSize: 13,
-                                          fontWeight:
-                                          FontWeight.bold),
+                                          fontWeight: FontWeight.bold),
                                       textAlign: TextAlign.center),
                                 ],
                               ),
@@ -488,14 +530,13 @@ class _GameScreenState extends State<GameScreen>
                                   child: ScaleTransition(
                                     scale: _pointsScale,
                                     child: Text(
-                                        '+${question.points}',
-                                        style: const TextStyle(
-                                            color: AppColors.correct,
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center),
+                                      '+$_effectivePoints',
+                                      style: const TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -509,36 +550,33 @@ class _GameScreenState extends State<GameScreen>
 
                 const SizedBox(height: 10),
 
-                // شريط الوقت
+                // ── شريط الوقت ───────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${question.points} نقطة',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold)),
+                          Text(
+                            '${_effectivePoints} نقطة',
+                            style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold),
+                          ),
                           Row(
                             children: [
                               Icon(
                                 _timesUp
                                     ? Icons.timer_off_outlined
                                     : Icons.timer_outlined,
-                                color: _timesUp
-                                    ? AppColors.wrong
-                                    : _timerColor,
+                                color: _timesUp ? AppColors.wrong : _timerColor,
                                 size: 14,
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                _timesUp
-                                    ? 'انتهى الوقت!'
-                                    : '$_timeLeft ث',
+                                _timesUp ? 'انتهى الوقت!' : '$_timeLeft ث',
                                 style: TextStyle(
                                     color: _timesUp
                                         ? AppColors.wrong
@@ -557,9 +595,7 @@ class _GameScreenState extends State<GameScreen>
                           value: _timeProgress,
                           backgroundColor: AppColors.surfaceColor,
                           valueColor: AlwaysStoppedAnimation(
-                              _timesUp
-                                  ? AppColors.wrong
-                                  : _timerColor),
+                              _timesUp ? AppColors.wrong : _timerColor),
                           minHeight: 5,
                         ),
                       ),
@@ -569,7 +605,7 @@ class _GameScreenState extends State<GameScreen>
 
                 const SizedBox(height: 14),
 
-                // بطاقة السؤال
+                // ── بطاقة السؤال ─────────────────────────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: FadeTransition(
@@ -578,21 +614,29 @@ class _GameScreenState extends State<GameScreen>
                       position: _questionSlide,
                       child: Container(
                         width: double.infinity,
-                        constraints:
-                        const BoxConstraints(minHeight: 130),
+                        constraints: const BoxConstraints(minHeight: 130),
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
                           color: AppColors.cardBackground,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: _timesUp
+                            color: widget.isDoubleQuestion
+                                ? const Color(0xFF8B2635).withOpacity(0.8)
+                                : widget.bonusPoints > 0
+                                ? const Color(0xFF9B59B6).withOpacity(0.8)
+                                : _timesUp
                                 ? AppColors.primary.withOpacity(0.8)
                                 : AppColors.cardBorderGold,
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                                color: AppColors.glowGold,
+                                color: widget.isDoubleQuestion
+                                    ? const Color(0xFF8B2635).withOpacity(0.15)
+                                    : widget.bonusPoints > 0
+                                    ? const Color(0xFF9B59B6)
+                                    .withOpacity(0.15)
+                                    : AppColors.glowGold,
                                 blurRadius: 20),
                           ],
                         ),
@@ -613,11 +657,10 @@ class _GameScreenState extends State<GameScreen>
 
                 const SizedBox(height: 14),
 
-                // الإجابة الصحيحة
+                // ── الإجابة الصحيحة ──────────────────────
                 if (_showAnswer)
                   Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 400),
                       width: double.infinity,
@@ -625,12 +668,11 @@ class _GameScreenState extends State<GameScreen>
                       decoration: BoxDecoration(
                         color: AppColors.correct.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                            color: AppColors.correct, width: 2),
+                        border:
+                        Border.all(color: AppColors.correct, width: 2),
                         boxShadow: [
                           BoxShadow(
-                              color:
-                              AppColors.correct.withOpacity(0.2),
+                              color: AppColors.correct.withOpacity(0.2),
                               blurRadius: 15),
                         ],
                       ),
@@ -649,8 +691,7 @@ class _GameScreenState extends State<GameScreen>
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const Text('الإجابة الصحيحة',
                                     style: TextStyle(
@@ -674,20 +715,26 @@ class _GameScreenState extends State<GameScreen>
 
                 const Spacer(),
 
-                // أزرار الفريقين
+                // ── أزرار الفريقين ───────────────────────
                 if (_selectedTeam == null)
                   Padding(
-                    padding:
-                    const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                     child: Column(
                       children: [
                         Text(
-                          _showAnswer
+                          widget.isDoubleQuestion
+                              ? '💥 الأسرع ياخذ النقاط!'
+                              : _showAnswer
                               ? 'من أجاب صح؟'
                               : 'اضغط على الفريق الذي أجاب',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary,
+                          style: TextStyle(
+                              color: widget.isDoubleQuestion
+                                  ? const Color(0xFF8B2635)
+                                  : AppColors.textSecondary,
                               fontSize: 12,
+                              fontWeight: widget.isDoubleQuestion
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                               letterSpacing: 0.5),
                         ),
                         const SizedBox(height: 10),
@@ -695,31 +742,26 @@ class _GameScreenState extends State<GameScreen>
                           children: [
                             Expanded(
                               child: GestureDetector(
-                                onTap: () =>
-                                    _selectWinner('team1'),
+                                onTap: () => _selectWinner('team1'),
                                 child: Container(
                                   height: 52,
                                   decoration: BoxDecoration(
-                                    color: AppColors.correct
-                                        .withOpacity(0.15),
-                                    borderRadius:
-                                    BorderRadius.circular(14),
+                                    color:
+                                    AppColors.correct.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                        color: AppColors.correct,
-                                        width: 1.5),
+                                        color: AppColors.correct, width: 1.5),
                                   ),
                                   child: Center(
                                     child: Text(
-                                        '🔵 ${widget.team1Name}',
-                                        style: const TextStyle(
-                                            color: AppColors.correct,
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        overflow:
-                                        TextOverflow.ellipsis,
-                                        textAlign:
-                                        TextAlign.center),
+                                      '🔵 ${widget.team1Name}',
+                                      style: const TextStyle(
+                                          color: AppColors.correct,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -732,42 +774,40 @@ class _GameScreenState extends State<GameScreen>
                                 height: 52,
                                 decoration: BoxDecoration(
                                   color: AppColors.surfaceColor,
-                                  borderRadius:
-                                  BorderRadius.circular(14),
+                                  borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
-                                      color: AppColors.cardBorder,
-                                      width: 1),
+                                      color: AppColors.cardBorder, width: 1),
+                                ),
+                                child: const Center(
+                                  child: Text('—',
+                                      style: TextStyle(
+                                          color: AppColors.textHint,
+                                          fontSize: 18)),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: GestureDetector(
-                                onTap: () =>
-                                    _selectWinner('team2'),
+                                onTap: () => _selectWinner('team2'),
                                 child: Container(
                                   height: 52,
                                   decoration: BoxDecoration(
-                                    color: AppColors.wrong
-                                        .withOpacity(0.15),
-                                    borderRadius:
-                                    BorderRadius.circular(14),
+                                    color: AppColors.wrong.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
-                                        color: AppColors.wrong,
-                                        width: 1.5),
+                                        color: AppColors.wrong, width: 1.5),
                                   ),
                                   child: Center(
                                     child: Text(
-                                        '🔴 ${widget.team2Name}',
-                                        style: const TextStyle(
-                                            color: AppColors.wrong,
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        overflow:
-                                        TextOverflow.ellipsis,
-                                        textAlign:
-                                        TextAlign.center),
+                                      '🔴 ${widget.team2Name}',
+                                      style: const TextStyle(
+                                          color: AppColors.wrong,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -778,11 +818,10 @@ class _GameScreenState extends State<GameScreen>
                     ),
                   ),
 
-                // زر الرجوع للوحة
+                // ── زر الرجوع للوحة ──────────────────────
                 if (_selectedTeam != null)
                   Padding(
-                    padding:
-                    const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: GestureDetector(
                       onTap: _goToResult,
                       child: Container(
@@ -799,8 +838,7 @@ class _GameScreenState extends State<GameScreen>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                                color: AppColors.glowGold,
-                                blurRadius: 15),
+                                color: AppColors.glowGold, blurRadius: 15),
                           ],
                         ),
                         child: const Center(
@@ -819,7 +857,6 @@ class _GameScreenState extends State<GameScreen>
                   ),
 
                 const SizedBox(height: 8),
-
               ],
             ),
 
@@ -841,8 +878,7 @@ class _GameScreenState extends State<GameScreen>
         ),
         title: const Text('مغادرة اللعبة؟',
             style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold),
+                color: AppColors.textPrimary, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center),
         content: const Text('سيتم فقدان تقدمك الحالي',
             style: TextStyle(color: AppColors.textSecondary),
@@ -857,8 +893,7 @@ class _GameScreenState extends State<GameScreen>
                     if (!_timesUp && !_showAnswer) _startTimer();
                   },
                   child: const Text('تابع',
-                      style:
-                      TextStyle(color: AppColors.primary)),
+                      style: TextStyle(color: AppColors.primary)),
                 ),
               ),
               Expanded(
@@ -871,8 +906,7 @@ class _GameScreenState extends State<GameScreen>
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                      AppColors.wrong.withOpacity(0.8)),
+                      backgroundColor: AppColors.wrong.withOpacity(0.8)),
                   child: const Text('خروج',
                       style: TextStyle(color: Colors.white)),
                 ),
