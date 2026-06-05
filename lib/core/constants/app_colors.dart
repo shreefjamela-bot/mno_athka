@@ -1,6 +1,6 @@
 // ==============================
-// ملف الألوان الفاخرة
-// Premium Dark Theme
+// ملف الألوان — ليلة كويتية
+// Kuwait Night Theme
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -8,92 +8,80 @@ import 'package:flutter/material.dart';
 abstract class AppColors {
 
   // ==============================
-  // الخلفيات — أسود فحمي فاخر
+  // الخلفيات — سماء ليلية عميقة
   // ==============================
 
-  // الخلفية الرئيسية
-  static const Color background = Color(0xFF0D0D0F);
-
-  // خلفية الكروت — Glass Effect
-  static const Color cardBackground = Color(0xFF16161A);
-
-  // خلفية ثانوية
-  static const Color surfaceColor = Color(0xFF1E1E24);
+  static const Color background = Color(0xFF080B1A);
+  static const Color cardBackground = Color(0xFF0D1535);
+  static const Color surfaceColor = Color(0xFF111D45);
 
   // ==============================
-  // الذهبي الملكي — اللون الأساسي
+  // الذهبي اللؤلؤي — اللون الأساسي
   // ==============================
 
-  // Champagne Gold
-  static const Color primary = Color(0xFFD4AF6A);
-
-  // ذهبي فاتح
-  static const Color primaryLight = Color(0xFFE8C97A);
-
-  // ذهبي داكن
-  static const Color primaryDark = Color(0xFFB8963E);
+  static const Color primary = Color(0xFFE8C97A);
+  static const Color primaryLight = Color(0xFFF5DFA0);
+  static const Color primaryDark = Color(0xFFD4AF6A);
 
   // ==============================
-  // الرمادي المزرق — اللون الثاني
+  // الأزرق السماوي — اللون الثاني
   // ==============================
 
-  static const Color secondary = Color(0xFF6B7FA3);
-
-  static const Color secondaryDark = Color(0xFF4A5A7A);
-
-  // ==============================
-  // الذهبي للنقاط والجوائز
-  // ==============================
-
-  static const Color gold = Color(0xFFD4AF6A);
-  static const Color goldDark = Color(0xFF8B6914);
+  static const Color secondary = Color(0xFF4FC3F7);
+  static const Color secondaryDark = Color(0xFF0288D1);
 
   // ==============================
-  // النصوص — أبيض ناعم
+  // الذهبي للنقاط
   // ==============================
 
-  // أبيض مائل للرمادي — راحة للعين
-  static const Color textPrimary = Color(0xFFE8E8EE);
+  static const Color gold = Color(0xFFE8C97A);
+  static const Color goldDark = Color(0xFFB8963E);
 
-  // رمادي فاتح — ثانوي
-  static const Color textSecondary = Color(0xFF8B8B9A);
+  // ==============================
+  // النصوص — أبيض لؤلؤي
+  // ==============================
 
-  // رمادي داكن — خافت
-  static const Color textHint = Color(0xFF4A4A58);
+  static const Color textPrimary = Color(0xFFF0F4FF);
+  static const Color textSecondary = Color(0xFFB0BED8);
+  static const Color textHint = Color(0xFF3A4A6A);
 
   // ==============================
   // الإجابات
   // ==============================
 
-  // أخضر زمردي ملكي
-  static const Color correct = Color(0xFF2D7A5F);
-
-  // أحمر خمري احترافي
-  static const Color wrong = Color(0xFF8B2635);
-
-  // كهرماني ذهبي — المحدد
-  static const Color selected = Color(0xFFB8860B);
+  static const Color correct = Color(0xFF00E676);
+  static const Color wrong = Color(0xFFFF5252);
+  static const Color selected = Color(0xFF4FC3F7);
 
   // ==============================
   // المستويات
   // ==============================
 
-  static const Color level1 = Color(0xFF2D7A5F);
-  static const Color level2 = Color(0xFFB8860B);
-  static const Color level3 = Color(0xFF8B2635);
+  static const Color level1 = Color(0xFF00E676);
+  static const Color level2 = Color(0xFFE8C97A);
+  static const Color level3 = Color(0xFF4FC3F7);
+
+  // ==============================
+  // ألوان الفريقين
+  // ==============================
+
+  static const Color team1Color = Color(0xFF00E676);
+  static const Color team2Color = Color(0xFF4FC3F7);
+  static const Color dangerRed = Color(0xFFFF5252);
+  static const Color purple = Color(0xFF7C4DFF);
 
   // ==============================
   // تأثيرات Glow
   // ==============================
 
-  static const Color glowPrimary = Color(0x44D4AF6A);
-  static const Color glowSecondary = Color(0x446B7FA3);
-  static const Color glowGold = Color(0x44D4AF6A);
+  static const Color glowPrimary = Color(0x66E8C97A);
+  static const Color glowSecondary = Color(0x444FC3F7);
+  static const Color glowGold = Color(0x55E8C97A);
 
   // ==============================
-  // حدود الكروت Glass
+  // حدود الكروت
   // ==============================
 
-  static const Color cardBorder = Color(0xFF2A2A35);
-  static const Color cardBorderGold = Color(0x33D4AF6A);
+  static const Color cardBorder = Color(0xFF1A2545);
+  static const Color cardBorderGold = Color(0x55E8C97A);
 }

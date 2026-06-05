@@ -38,6 +38,16 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
   int _roundsPlayed = 0;
   bool _bonus1000Used = false;
 
+  // ✅ حالة وسائل المساعدة — تحفظ عبر كل الأسئلة
+  bool _team1CallUsed = false;
+  bool _team1RevealUsed = false;
+  bool _team1ExtendUsed = false;
+  bool _team1AltUsed = false;
+  bool _team2CallUsed = false;
+  bool _team2RevealUsed = false;
+  bool _team2ExtendUsed = false;
+  bool _team2AltUsed = false;
+
   Map<String, Map<int, bool>> _playedMap = {};
 
   late AnimationController _pulseController;
@@ -46,8 +56,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
   @override
   void initState() {
     super.initState();
-
-    // ترتيب عشوائي — currentTeam اتحدد في wheel_screen
     _currentTeam = 1;
 
     for (final cat in [
@@ -65,7 +73,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    // عرض بانر التحدي عند البداية
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.challenge != 'normal') {
         _showChallengeBanner();
@@ -79,16 +86,15 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     super.dispose();
   }
 
-  // ── عرض بانر التحدي ──────────────────────────────
   void _showChallengeBanner() {
     final challenges = {
-      'double_points': ('⚡', 'نقطة مضاعفة', 'النقاط ×2 في أول جولة!'),
-      'bonus_1000':    ('🌟', 'سؤال الألف', 'سيظهر سؤال 1000 نقطة في المنتصف!'),
-      'time_pressure': ('⏱️', 'ضغط الوقت', 'كل سؤال 15 ثانية فقط!'),
-      'random_start':  ('🔀', 'ترتيب عشوائي', 'تم تحديد من يبدأ عشوائياً!'),
+      'double_points':  ('⚡', 'نقطة مضاعفة', 'النقاط ×2 في أول جولة!'),
+      'bonus_1000':     ('🌟', 'سؤال الألف', 'سيظهر سؤال 1000 نقطة في المنتصف!'),
+      'time_pressure':  ('⏱️', 'ضغط الوقت', 'كل سؤال 15 ثانية فقط!'),
+      'random_start':   ('🔀', 'ترتيب عشوائي', 'تم تحديد من يبدأ عشوائياً!'),
       'double_question':('💥', 'سؤال مزدوج', 'أول سؤال — الفريقان يتنافسان!'),
       'swap_categories':('🔁', 'عكس الأدوار', 'فريق 1 يجيب عن فئات فريق 2!'),
-      'double_bet':    ('⏫', 'مضاعفة الرهان', 'قبل كل سؤال — راهن أو لا!'),
+      'double_bet':     ('⏫', 'مضاعفة الرهان', 'قبل كل سؤال — راهن أو لا!'),
     };
 
     final data = challenges[widget.challenge];
@@ -105,31 +111,23 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
             color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: AppColors.cardBorderGold, width: 2),
-            boxShadow: [
-              BoxShadow(color: AppColors.glowGold, blurRadius: 30),
-            ],
+            boxShadow: [BoxShadow(color: AppColors.glowGold, blurRadius: 30)],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(data.$1, style: const TextStyle(fontSize: 56)),
               const SizedBox(height: 12),
-              Text(
-                data.$2,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              Text(data.$2,
+                  style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              Text(
-                data.$3,
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 15),
-                textAlign: TextAlign.center,
-              ),
+              Text(data.$3,
+                  style: const TextStyle(color: Colors.white70, fontSize: 15),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -149,8 +147,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     );
   }
 
-  int _levelPoints(int level) => level == 1 ? 200 : level == 2 ? 400 : 600;
-
   bool _isPlayed(String catId, int level) =>
       _playedMap[catId]?[level] ?? false;
 
@@ -166,32 +162,20 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     return true;
   }
 
-  // ── حساب النقاط مع التحدي ───────────────────────
-  int _calcPoints(int basePoints) {
-    if (widget.challenge == 'double_points' && _roundsPlayed == 0) {
-      return basePoints * 2;
-    }
-    return basePoints;
-  }
-
-  // ── سؤال مزدوج — أول سؤال فقط ──────────────────
   bool get _isDoubleQuestion =>
       widget.challenge == 'double_question' && _roundsPlayed == 0;
 
-  // ── وقت السؤال حسب التحدي ───────────────────────
   int get _questionTime =>
       widget.challenge == 'time_pressure' ? 15 : 120;
 
   void _playCell(CategoryModel category, int level) async {
     if (_isPlayed(category.id, level)) return;
 
-    // سؤال مزدوج — نعرض popup قبل اللعب
     if (_isDoubleQuestion) {
       await _showDoubleQuestionDialog(category, level);
       return;
     }
 
-    // مضاعفة الرهان
     bool isBetting = false;
     int betAmount = 0;
     if (widget.challenge == 'double_bet') {
@@ -202,7 +186,8 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
       }
     }
 
-    final result = await Navigator.push<Map<String, int>>(
+    // ✅ نمرر حالة الوسائل للـ GameScreen
+    final result = await Navigator.push<Map<String, dynamic>>(
       context,
       PageRouteBuilder(
         pageBuilder: (_, __, ___) => GameScreen(
@@ -211,6 +196,14 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
           team1Name: widget.team1Name,
           team2Name: widget.team2Name,
           timeLimit: _questionTime,
+          team1CallUsed: _team1CallUsed,
+          team1RevealUsed: _team1RevealUsed,
+          team1ExtendUsed: _team1ExtendUsed,
+          team1AltUsed: _team1AltUsed,
+          team2CallUsed: _team2CallUsed,
+          team2RevealUsed: _team2RevealUsed,
+          team2ExtendUsed: _team2ExtendUsed,
+          team2AltUsed: _team2AltUsed,
         ),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
@@ -220,18 +213,26 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
 
     if (result != null && mounted) {
       setState(() {
+        // ✅ نحفظ حالة الوسائل من النتيجة
+        _team1CallUsed = result['team1CallUsed'] ?? _team1CallUsed;
+        _team1RevealUsed = result['team1RevealUsed'] ?? _team1RevealUsed;
+        _team1ExtendUsed = result['team1ExtendUsed'] ?? _team1ExtendUsed;
+        _team1AltUsed = result['team1AltUsed'] ?? _team1AltUsed;
+        _team2CallUsed = result['team2CallUsed'] ?? _team2CallUsed;
+        _team2RevealUsed = result['team2RevealUsed'] ?? _team2RevealUsed;
+        _team2ExtendUsed = result['team2ExtendUsed'] ?? _team2ExtendUsed;
+        _team2AltUsed = result['team2AltUsed'] ?? _team2AltUsed;
+
         _playedMap[category.id]![level] = true;
 
         int t1 = result['team1'] ?? 0;
         int t2 = result['team2'] ?? 0;
 
-        // تطبيق نقطة مضاعفة
         if (widget.challenge == 'double_points' && _roundsPlayed == 0) {
           t1 *= 2;
           t2 *= 2;
         }
 
-        // تطبيق مضاعفة الرهان
         if (isBetting) {
           if (t1 > 0) {
             _team1Points += betAmount;
@@ -254,7 +255,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
         _currentTeam = _currentTeam == 1 ? 2 : 1;
       });
 
-      // سؤال الألف — في منتصف المباراة
       final totalCells = (widget.team1Categories.length +
           widget.team2Categories.length) *
           3;
@@ -272,7 +272,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     }
   }
 
-  // ── سؤال مزدوج ──────────────────────────────────
   Future<void> _showDoubleQuestionDialog(
       CategoryModel category, int level) async {
     await showDialog(
@@ -292,20 +291,15 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
             children: [
               const Text('💥', style: TextStyle(fontSize: 48)),
               const SizedBox(height: 12),
-              const Text(
-                'سؤال مزدوج!',
-                style: TextStyle(
-                  color: Color(0xFF8B2635),
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('سؤال مزدوج!',
+                  style: TextStyle(
+                      color: Color(0xFF8B2635),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const Text(
-                'الفريقان يجيبان — الأسرع ياخذ النقاط كاملة',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
+              const Text('الفريقان يجيبان — الأسرع ياخذ النقاط كاملة',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -315,8 +309,7 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                 ),
                 onPressed: () async {
                   Navigator.pop(context);
-                  final result =
-                  await Navigator.push<Map<String, int>>(
+                  final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     PageRouteBuilder(
                       pageBuilder: (_, __, ___) => GameScreen(
@@ -326,31 +319,46 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                         team2Name: widget.team2Name,
                         timeLimit: _questionTime,
                         isDoubleQuestion: true,
+                        team1CallUsed: _team1CallUsed,
+                        team1RevealUsed: _team1RevealUsed,
+                        team1ExtendUsed: _team1ExtendUsed,
+                        team1AltUsed: _team1AltUsed,
+                        team2CallUsed: _team2CallUsed,
+                        team2RevealUsed: _team2RevealUsed,
+                        team2ExtendUsed: _team2ExtendUsed,
+                        team2AltUsed: _team2AltUsed,
                       ),
                       transitionsBuilder: (_, animation, __, child) =>
                           FadeTransition(opacity: animation, child: child),
-                      transitionDuration:
-                      const Duration(milliseconds: 400),
+                      transitionDuration: const Duration(milliseconds: 400),
                     ),
                   );
                   if (result != null && mounted) {
                     setState(() {
+                      _team1CallUsed = result['team1CallUsed'] ?? _team1CallUsed;
+                      _team1RevealUsed = result['team1RevealUsed'] ?? _team1RevealUsed;
+                      _team1ExtendUsed = result['team1ExtendUsed'] ?? _team1ExtendUsed;
+                      _team1AltUsed = result['team1AltUsed'] ?? _team1AltUsed;
+                      _team2CallUsed = result['team2CallUsed'] ?? _team2CallUsed;
+                      _team2RevealUsed = result['team2RevealUsed'] ?? _team2RevealUsed;
+                      _team2ExtendUsed = result['team2ExtendUsed'] ?? _team2ExtendUsed;
+                      _team2AltUsed = result['team2AltUsed'] ?? _team2AltUsed;
+
                       _playedMap[category.id]![level] = true;
-                      _team1Points += result['team1'] ?? 0;
-                      _team2Points += result['team2'] ?? 0;
+                      _team1Points += (result['team1'] ?? 0) as int;
+                      _team2Points += (result['team2'] ?? 0) as int;
                       _roundsPlayed++;
                       _currentTeam = _currentTeam == 1 ? 2 : 1;
                     });
                     if (_isGameOver) {
-                      Future.delayed(const Duration(milliseconds: 400),
-                          _showFinalResult);
+                      Future.delayed(
+                          const Duration(milliseconds: 400), _showFinalResult);
                     }
                   }
                 },
                 child: const Text('ابدأ السؤال المزدوج! 💥',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                        color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -359,7 +367,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     );
   }
 
-  // ── سؤال الألف ──────────────────────────────────
   Future<void> _showBonus1000Dialog() async {
     await showDialog(
       context: context,
@@ -383,21 +390,16 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
             children: [
               const Text('🌟', style: TextStyle(fontSize: 56)),
               const SizedBox(height: 12),
-              const Text(
-                'سؤال الألف نقطة!',
-                style: TextStyle(
-                  color: Color(0xFF9B59B6),
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              const Text('سؤال الألف نقطة!',
+                  style: TextStyle(
+                      color: Color(0xFF9B59B6),
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 8),
-              const Text(
-                'سؤال مفاجئ من فئة عشوائية\nالفائز يأخذ 1000 نقطة!',
-                style: TextStyle(color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
+              const Text('سؤال مفاجئ من فئة عشوائية\nالفائز يأخذ 1000 نقطة!',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -407,16 +409,13 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                 ),
                 onPressed: () async {
                   Navigator.pop(context);
-                  // نأخذ فئة عشوائية من الفئات النشطة
                   final allCats = [
                     ...widget.team1Categories,
                     ...widget.team2Categories,
                   ];
                   final randomCat =
                   allCats[DateTime.now().millisecond % allCats.length];
-
-                  final result =
-                  await Navigator.push<Map<String, int>>(
+                  final result = await Navigator.push<Map<String, dynamic>>(
                     context,
                     PageRouteBuilder(
                       pageBuilder: (_, __, ___) => GameScreen(
@@ -426,24 +425,38 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                         team2Name: widget.team2Name,
                         timeLimit: 60,
                         bonusPoints: 1000,
+                        team1CallUsed: _team1CallUsed,
+                        team1RevealUsed: _team1RevealUsed,
+                        team1ExtendUsed: _team1ExtendUsed,
+                        team1AltUsed: _team1AltUsed,
+                        team2CallUsed: _team2CallUsed,
+                        team2RevealUsed: _team2RevealUsed,
+                        team2ExtendUsed: _team2ExtendUsed,
+                        team2AltUsed: _team2AltUsed,
                       ),
                       transitionsBuilder: (_, animation, __, child) =>
                           FadeTransition(opacity: animation, child: child),
-                      transitionDuration:
-                      const Duration(milliseconds: 400),
+                      transitionDuration: const Duration(milliseconds: 400),
                     ),
                   );
                   if (result != null && mounted) {
                     setState(() {
-                      _team1Points += result['team1'] ?? 0;
-                      _team2Points += result['team2'] ?? 0;
+                      _team1CallUsed = result['team1CallUsed'] ?? _team1CallUsed;
+                      _team1RevealUsed = result['team1RevealUsed'] ?? _team1RevealUsed;
+                      _team1ExtendUsed = result['team1ExtendUsed'] ?? _team1ExtendUsed;
+                      _team1AltUsed = result['team1AltUsed'] ?? _team1AltUsed;
+                      _team2CallUsed = result['team2CallUsed'] ?? _team2CallUsed;
+                      _team2RevealUsed = result['team2RevealUsed'] ?? _team2RevealUsed;
+                      _team2ExtendUsed = result['team2ExtendUsed'] ?? _team2ExtendUsed;
+                      _team2AltUsed = result['team2AltUsed'] ?? _team2AltUsed;
+                      _team1Points += (result['team1'] ?? 0) as int;
+                      _team2Points += (result['team2'] ?? 0) as int;
                     });
                   }
                 },
                 child: const Text('ابدأ سؤال الألف! 🌟',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
+                        color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -452,10 +465,8 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
     );
   }
 
-  // ── مضاعفة الرهان ────────────────────────────────
   Future<int?> _showBetDialog(CategoryModel category, int level) async {
-    final currentPoints =
-    _currentTeam == 1 ? _team1Points : _team2Points;
+    final currentPoints = _currentTeam == 1 ? _team1Points : _team2Points;
     if (currentPoints == 0) return null;
 
     return showDialog<int>(
@@ -475,9 +486,7 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
               const Text('⏫', style: TextStyle(fontSize: 48)),
               const SizedBox(height: 12),
               Text(
-                _currentTeam == 1
-                    ? widget.team1Name
-                    : widget.team2Name,
+                _currentTeam == 1 ? widget.team1Name : widget.team2Name,
                 style: const TextStyle(
                     color: AppColors.primary,
                     fontSize: 20,
@@ -485,11 +494,8 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                'نقاطك الحالية: $currentPoints',
-                style:
-                const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
+              Text('نقاطك الحالية: $currentPoints',
+                  style: const TextStyle(color: Colors.white70, fontSize: 14)),
               const SizedBox(height: 16),
               const Text(
                 'تراهن بنقاطك؟\nإذا أجبت صح تضاعف — إذا غلط تخسرها',
@@ -519,12 +525,10 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () =>
-                          Navigator.pop(context, currentPoints),
+                      onPressed: () => Navigator.pop(context, currentPoints),
                       child: const Text('أراهن! ⏫',
                           style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold)),
+                              color: Colors.black, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -575,7 +579,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
         child: Column(
           children: [
 
-            // الهيدر
             Container(
               margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -590,7 +593,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
               child: Row(
                 children: [
 
-                  // الفريق ١
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -648,7 +650,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                     ),
                   ),
 
-                  // المنتصف
                   Column(
                     children: [
                       const Text('VS',
@@ -663,14 +664,11 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                       if (widget.challenge != 'normal')
                         const SizedBox(height: 2),
                       if (widget.challenge != 'normal')
-                        Text(
-                          _challengeEmoji(),
-                          style: const TextStyle(fontSize: 14),
-                        ),
+                        Text(_challengeEmoji(),
+                            style: const TextStyle(fontSize: 14)),
                     ],
                   ),
 
-                  // الفريق ٢
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -732,14 +730,12 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
               ),
             ),
 
-            // اللوحة
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
                 child: Row(
                   children: [
 
-                    // عمود الفريق ١
                     Expanded(
                       child: Column(
                         children: [
@@ -796,7 +792,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                       ),
                     ),
 
-                    // فاصل ذهبي
                     Container(
                       width: 1,
                       margin: const EdgeInsets.symmetric(
@@ -816,7 +811,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
                       ),
                     ),
 
-                    // عمود الفريق ٢
                     Expanded(
                       child: Column(
                         children: [
@@ -974,8 +968,7 @@ class _CategoryRow extends StatelessWidget {
 
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 6, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
               child: Column(
                 children: [
                   Text(
@@ -997,7 +990,6 @@ class _CategoryRow extends StatelessWidget {
                     children: [1, 2, 3].map((level) {
                       final played = playedMap[level]!;
                       final canTap = canPlay && !played;
-
                       return GestureDetector(
                         onTap: canTap ? () => onLevelTap(level) : null,
                         child: AnimatedContainer(
@@ -1009,16 +1001,14 @@ class _CategoryRow extends StatelessWidget {
                                 ? AppColors.textHint.withOpacity(0.15)
                                 : canTap
                                 ? teamColor.withOpacity(0.15)
-                                : AppColors.surfaceColor
-                                .withOpacity(0.5),
+                                : AppColors.surfaceColor.withOpacity(0.5),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: played
                                   ? AppColors.textHint.withOpacity(0.3)
                                   : canTap
                                   ? teamColor
-                                  : AppColors.cardBorder
-                                  .withOpacity(0.5),
+                                  : AppColors.cardBorder.withOpacity(0.5),
                               width: canTap ? 1.5 : 1,
                             ),
                           ),

@@ -1,6 +1,6 @@
 // ==============================
-// ملف الثيم الفاخر
-// Premium Dark Theme
+// ملف الثيم — ليلة كويتية
+// Kuwait Night Theme
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -16,8 +16,8 @@ abstract class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.secondary,
         surface: AppColors.background,
-        onPrimary: AppColors.textPrimary,
-        onSecondary: AppColors.textPrimary,
+        onPrimary: AppColors.background,
+        onSecondary: AppColors.background,
         onSurface: AppColors.textPrimary,
       ),
 
@@ -29,9 +29,9 @@ abstract class AppTheme {
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.background,
         elevation: 0,
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        iconTheme: IconThemeData(color: AppColors.primary),
         titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
+          color: AppColors.primary,
           fontSize: 20,
           fontWeight: FontWeight.bold,
           letterSpacing: 1.2,
@@ -39,7 +39,7 @@ abstract class AppTheme {
       ),
 
       // ==============================
-      // الأزرار — ناعمة وفاخرة
+      // الأزرار
       // ==============================
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -53,6 +53,7 @@ abstract class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
+          shadowColor: AppColors.glowGold,
           textStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -62,7 +63,7 @@ abstract class AppTheme {
       ),
 
       // ==============================
-      // الكروت — Glass Effect
+      // الكروت
       // ==============================
       cardTheme: CardThemeData(
         color: AppColors.cardBackground,
@@ -70,11 +71,51 @@ abstract class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(
-            color: AppColors.cardBorder,
+            color: AppColors.cardBorderGold,
             width: 1,
           ),
         ),
         margin: const EdgeInsets.all(8),
+      ),
+
+      // ==============================
+      // حقول الإدخال
+      // ==============================
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.surfaceColor,
+        hintStyle: const TextStyle(color: AppColors.textHint),
+        labelStyle: const TextStyle(color: AppColors.primary),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.cardBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+              color: AppColors.primary.withOpacity(0.3), width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide:
+          const BorderSide(color: AppColors.primary, width: 2),
+        ),
+      ),
+
+      // ==============================
+      // شريط التقدم
+      // ==============================
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.primary,
+        linearTrackColor: AppColors.surfaceColor,
+      ),
+
+      // ==============================
+      // Divider
+      // ==============================
+      dividerTheme: const DividerThemeData(
+        color: AppColors.cardBorder,
+        thickness: 1,
       ),
 
       // ==============================
@@ -103,10 +144,16 @@ abstract class AppTheme {
           color: AppColors.textPrimary,
           fontSize: 16,
           letterSpacing: 0.3,
+          height: 1.6,
         ),
         bodyMedium: TextStyle(
           color: AppColors.textSecondary,
           fontSize: 14,
+          height: 1.5,
+        ),
+        bodySmall: TextStyle(
+          color: AppColors.textHint,
+          fontSize: 12,
         ),
       ),
     );
