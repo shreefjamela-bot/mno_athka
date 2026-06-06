@@ -12,6 +12,10 @@ import 'core/supabase_config.dart';
 import 'features/game/draft_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/leaderboard_screen.dart';
+import 'features/suggestions_screen.dart';
+import 'features/user_questions_screen.dart';
+import 'features/weekly_challenge_screen.dart';
+import 'features/custom_categories_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +41,7 @@ class MnoAthkaApp extends StatelessWidget {
 }
 
 // ==============================
-// معلومة اليوم — تتغير كل 24 ساعة
+// معلومة اليوم
 // ==============================
 const List<String> _dailyFacts = [
   '🧠 الدماغ البشري يولّد ما يكفي من الكهرباء لإضاءة مصباح صغير',
@@ -67,7 +71,9 @@ const List<String> _dailyFacts = [
 ];
 
 String _getDailyFact() {
-  final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
+  final dayOfYear = DateTime.now()
+      .difference(DateTime(DateTime.now().year))
+      .inDays;
   return _dailyFacts[dayOfYear % _dailyFacts.length];
 }
 
@@ -81,7 +87,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with TickerProviderStateMixin {
 
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
@@ -103,7 +110,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
@@ -111,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _glowAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
-
     _imageController = PageController();
     _imageTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) {
@@ -135,6 +140,74 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // ── بناء زر ──────────────────────────────────────
+  Widget _buildButton({
+    required String emoji,
+    required String label,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedBuilder(
+        animation: _glowAnimation,
+        builder: (_, __) => Container(
+          width: double.infinity,
+          height: isPrimary ? 58 : 50,
+          decoration: BoxDecoration(
+            gradient: isPrimary
+                ? LinearGradient(
+              colors: [
+                AppColors.primaryDark,
+                AppColors.primary,
+                AppColors.primaryLight,
+              ],
+            )
+                : null,
+            color: isPrimary ? null : AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(14),
+            border: isPrimary
+                ? null
+                : Border.all(color: AppColors.cardBorderGold),
+            boxShadow: isPrimary
+                ? [
+              BoxShadow(
+                color: AppColors.primary
+                    .withOpacity(0.4 * _glowAnimation.value),
+                blurRadius: 20,
+                spreadRadius: 1,
+              ),
+            ]
+                : [
+              BoxShadow(
+                  color: AppColors.glowGold, blurRadius: 8),
+            ],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(emoji, style: const TextStyle(fontSize: 18)),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: isPrimary ? 20 : 15,
+                    fontWeight: FontWeight.bold,
+                    color: isPrimary
+                        ? AppColors.background
+                        : AppColors.primary,
+                    letterSpacing: isPrimary ? 2 : 1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -146,15 +219,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           icon: const Icon(Icons.leaderboard, color: AppColors.primary),
           onPressed: () => Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+            MaterialPageRoute(
+                builder: (context) => const LeaderboardScreen()),
           ),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline, color: AppColors.textPrimary),
+            icon: const Icon(Icons.person_outline,
+                color: AppColors.textPrimary),
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              MaterialPageRoute(
+                  builder: (context) => const ProfileScreen()),
             ),
           ),
           const SizedBox(width: 8),
@@ -189,8 +265,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         letterSpacing: 3,
                         shadows: [
                           Shadow(
-                            color: AppColors.primary
-                                .withOpacity(0.5 * _glowAnimation.value),
+                            color: AppColors.primary.withOpacity(
+                                0.5 * _glowAnimation.value),
                             blurRadius: 20,
                           ),
                         ],
@@ -215,84 +291,82 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                 const SizedBox(height: 24),
 
-                // ── زر ابدأ اللعب ───────────────────────
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const DraftScreen()),
-                  ),
-                  child: AnimatedBuilder(
-                    animation: _glowAnimation,
-                    builder: (_, __) => Container(
-                      width: double.infinity,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppColors.primaryDark,
-                            AppColors.primary,
-                            AppColors.primaryLight,
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary
-                                .withOpacity(0.4 * _glowAnimation.value),
-                            blurRadius: 25,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text(
-                          '🎮  ابدأ اللعب',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.background,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+                // ══════════════════════════════════════
+                // الأزرار الرئيسية
+                // ══════════════════════════════════════
 
-                const SizedBox(height: 12),
-
-                // ── زر لوحة المتصدرين ───────────────────
-                GestureDetector(
+                // ١. ابدأ اللعب
+                _buildButton(
+                  emoji: '🎮',
+                  label: 'ابدأ اللعب',
+                  isPrimary: true,
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const LeaderboardScreen()),
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.cardBorderGold),
-                    ),
-                    child: const Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.leaderboard,
-                              color: AppColors.primary, size: 20),
-                          SizedBox(width: 8),
-                          Text(
-                            'لوحة المتصدرين',
-                            style: TextStyle(
-                                fontSize: 15, color: AppColors.primary),
-                          ),
-                        ],
-                      ),
-                    ),
+                        builder: (context) => const DraftScreen()),
                   ),
                 ),
+
+                const SizedBox(height: 10),
+
+                // ٢. التحدي الملحمي الأسبوعي
+                _buildButton(
+                  emoji: '🦅',
+                  label: 'التحدي الملحمي الأسبوعي',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                        const WeeklyChallengeScreen()),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ٣. أضف سؤالك الخاص
+                _buildButton(
+                  emoji: '✍️',
+                  label: 'أضف سؤالك الخاص',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                        const UserQuestionsScreen()),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ٤. فئتي الخاصة
+                _buildButton(
+                  emoji: '🗂️',
+                  label: 'أنشئ فئتك الخاصة',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                        const CustomCategoriesScreen()),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                // ٥. اقتراحاتك تهمنا
+                _buildButton(
+                  emoji: '💬',
+                  label: 'اقتراحاتك تهمنا',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                        const SuggestionsScreen()),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ── التحدي الأسبوعي — بطاقة مختصرة ────
+                _WeeklyChallengeCard(),
 
                 const SizedBox(height: 20),
 
@@ -313,34 +387,30 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: AppColors.primary, width: 1),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: AppColors.primary, width: 1),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('💡', style: TextStyle(fontSize: 14)),
+                            SizedBox(width: 6),
+                            Text(
+                              'كل يوم معلومة',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            child: const Row(
-                              children: [
-                                Text('💡',
-                                    style: TextStyle(fontSize: 14)),
-                                SizedBox(width: 6),
-                                Text(
-                                  'كل يوم معلومة',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -359,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                 const SizedBox(height: 20),
 
-                // ── الصور المربعة ────────────────────────
+                // ── لحظات اللعبة ────────────────────────
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -374,8 +444,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-
-                    // الصور في PageView
                     SizedBox(
                       height: 200,
                       child: PageView.builder(
@@ -384,7 +452,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         onPageChanged: (i) =>
                             setState(() => _currentImage = i),
                         itemBuilder: (ctx, i) => Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 4),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(16),
                             child: Image.asset(
@@ -393,8 +462,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                               errorBuilder: (_, __, ___) => Container(
                                 color: AppColors.surfaceColor,
                                 child: const Center(
-                                  child: Icon(Icons.image_not_supported,
-                                      color: AppColors.textHint, size: 40),
+                                  child: Icon(
+                                      Icons.image_not_supported,
+                                      color: AppColors.textHint,
+                                      size: 40),
                                 ),
                               ),
                             ),
@@ -402,17 +473,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 10),
-
-                    // نقاط التنقل
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: List.generate(
                         _images.length,
                             (i) => AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          margin:
+                          const EdgeInsets.symmetric(horizontal: 3),
                           width: _currentImage == i ? 20 : 6,
                           height: 6,
                           decoration: BoxDecoration(
@@ -450,10 +519,161 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
 
                 const SizedBox(height: 24),
-
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ==============================
+// بطاقة التحدي الأسبوعي المختصرة
+// ==============================
+class _WeeklyChallengeCard extends StatefulWidget {
+  @override
+  State<_WeeklyChallengeCard> createState() =>
+      _WeeklyChallengeCardState();
+}
+
+class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard> {
+  Map<String, dynamic>? _challenge;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('weekly_challenges')
+          .select()
+          .eq('is_active', true)
+          .limit(1)
+          .maybeSingle();
+      setState(() {
+        _challenge = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading || _challenge == null) return const SizedBox();
+
+    final target = _challenge!['target'] as int;
+    const progress = 3; // تجريبي
+    final percent = (progress / target).clamp(0.0, 1.0);
+    final daysLeft = DateTime.parse(_challenge!['end_date'])
+        .difference(DateTime.now())
+        .inDays;
+
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => const WeeklyChallengeScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cardBorderGold, width: 1.5),
+          boxShadow: [
+            BoxShadow(color: AppColors.glowGold, blurRadius: 12),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(_challenge!['badge'],
+                    style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'التحدي الأسبوعي',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        _challenge!['title'],
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.wrong.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$daysLeft يوم',
+                    style: const TextStyle(
+                      color: AppColors.wrong,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: percent,
+                backgroundColor: AppColors.surfaceColor,
+                valueColor:
+                const AlwaysStoppedAnimation(AppColors.primary),
+                minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$progress / $target جولة',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                Text(
+                  '${(percent * 100).toInt()}%',
+                  style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
