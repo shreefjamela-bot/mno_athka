@@ -4,6 +4,7 @@
 // ==============================
 
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -78,6 +79,40 @@ String _getDailyFact() {
 }
 
 // ==============================
+// رسام النجوم المتحركة
+// ==============================
+class _StarsPainter extends CustomPainter {
+  final double progress;
+  final List<Offset> stars;
+  final List<double> sizes;
+
+  _StarsPainter({
+    required this.progress,
+    required this.stars,
+    required this.sizes,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (int i = 0; i < stars.length; i++) {
+      final opacity =
+      (sin(progress * 2 * pi + i) * 0.3 + 0.5).clamp(0.2, 0.8);
+      final paint = Paint()
+        ..color = AppColors.primary.withOpacity(opacity)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        Offset(stars[i].dx * size.width, stars[i].dy * size.height),
+        sizes[i],
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StarsPainter old) => old.progress != progress;
+}
+
+// ==============================
 // الشاشة الرئيسية
 // ==============================
 class HomeScreen extends StatefulWidget {
@@ -92,9 +127,18 @@ class _HomeScreenState extends State<HomeScreen>
 
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
+  late AnimationController _starsController;
+  late AnimationController _entranceController;
+  late Animation<double> _entranceFade;
+  late Animation<Offset> _entranceSlide;
   late PageController _imageController;
   Timer? _imageTimer;
   int _currentImage = 0;
+  int? _pressedButton;
+
+  final _random = Random(42);
+  late final List<Offset> _stars;
+  late final List<double> _starSizes;
 
   final List<String> _images = [
     'assets/images/wrg.png',
@@ -110,13 +154,43 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+
+    _stars = List.generate(
+      40,
+          (_) => Offset(_random.nextDouble(), _random.nextDouble()),
+    );
+    _starSizes = List.generate(
+        40, (_) => _random.nextDouble() * 1.5 + 0.5);
+
     _glowController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
     _glowAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+      CurvedAnimation(
+          parent: _glowController, curve: Curves.easeInOut),
     );
+
+    _starsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat();
+
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _entranceFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+          parent: _entranceController, curve: Curves.easeOut),
+    );
+    _entranceSlide = Tween<Offset>(
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+        parent: _entranceController, curve: Curves.easeOut));
+    _entranceController.forward();
+
     _imageController = PageController();
     _imageTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (mounted) {
@@ -135,25 +209,39 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _glowController.dispose();
+    _starsController.dispose();
+    _entranceController.dispose();
     _imageController.dispose();
     _imageTimer?.cancel();
     super.dispose();
   }
 
-  // ── بناء زر ──────────────────────────────────────
   Widget _buildButton({
     required String emoji,
     required String label,
     required VoidCallback onTap,
+    required int index,
     bool isPrimary = false,
+    Color? accentColor,
   }) {
+    final color = accentColor ?? AppColors.primary;
+    final isPressed = _pressedButton == index;
+
     return GestureDetector(
-      onTap: onTap,
+      onTapDown: (_) => setState(() => _pressedButton = index),
+      onTapUp: (_) {
+        setState(() => _pressedButton = null);
+        onTap();
+      },
+      onTapCancel: () => setState(() => _pressedButton = null),
       child: AnimatedBuilder(
         animation: _glowAnimation,
-        builder: (_, __) => Container(
+        builder: (_, __) => AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
           width: double.infinity,
-          height: isPrimary ? 58 : 50,
+          height: isPrimary ? 62 : 52,
+          transform: Matrix4.identity()
+            ..translate(0.0, isPressed ? 3.0 : 0.0),
           decoration: BoxDecoration(
             gradient: isPrimary
                 ? LinearGradient(
@@ -162,48 +250,112 @@ class _HomeScreenState extends State<HomeScreen>
                 AppColors.primary,
                 AppColors.primaryLight,
               ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
             )
-                : null,
-            color: isPrimary ? null : AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(14),
-            border: isPrimary
-                ? null
-                : Border.all(color: AppColors.cardBorderGold),
-            boxShadow: isPrimary
+                : LinearGradient(
+              colors: [
+                color.withOpacity(0.15),
+                color.withOpacity(0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: color.withOpacity(isPrimary ? 0 : 0.5),
+              width: 1.5,
+            ),
+            boxShadow: isPressed
+                ? []
+                : isPrimary
                 ? [
               BoxShadow(
-                color: AppColors.primary
-                    .withOpacity(0.4 * _glowAnimation.value),
+                color: AppColors.primary.withOpacity(
+                    0.5 * _glowAnimation.value),
                 blurRadius: 20,
-                spreadRadius: 1,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.2),
+                blurRadius: 40,
+                spreadRadius: 4,
               ),
             ]
                 : [
               BoxShadow(
-                  color: AppColors.glowGold, blurRadius: 8),
+                color: color.withOpacity(0.2),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color:
+                AppColors.background.withOpacity(0.5),
+                blurRadius: 4,
+                offset: const Offset(0, -2),
+              ),
             ],
           ),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(emoji, style: const TextStyle(fontSize: 18)),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: isPrimary ? 20 : 15,
-                    fontWeight: FontWeight.bold,
-                    color: isPrimary
-                        ? AppColors.background
-                        : AppColors.primary,
-                    letterSpacing: isPrimary ? 2 : 1,
-                  ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(emoji,
+                  style:
+                  TextStyle(fontSize: isPrimary ? 22 : 18)),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: isPrimary ? 20 : 15,
+                  fontWeight: FontWeight.bold,
+                  color: isPrimary ? AppColors.background : color,
+                  letterSpacing: isPrimary ? 2 : 0.5,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDepthCard({required Widget child}) {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (_, __) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.cardBackground,
+              AppColors.surfaceColor.withOpacity(0.8),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.cardBorderGold,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary
+                  .withOpacity(0.1 * _glowAnimation.value),
+              blurRadius: 20,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: AppColors.background.withOpacity(0.8),
+              blurRadius: 6,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: child,
       ),
     );
   }
@@ -212,339 +364,450 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.leaderboard, color: AppColors.primary),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => const LeaderboardScreen()),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline,
-                color: AppColors.textPrimary),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const ProfileScreen()),
+      body: Stack(
+        children: [
+
+          // نجوم متحركة
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _starsController,
+              builder: (_, __) => CustomPaint(
+                painter: _StarsPainter(
+                  progress: _starsController.value,
+                  stars: _stars,
+                  sizes: _starSizes,
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+
+          // تدرج خلفي
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.5),
+                  radius: 1.2,
+                  colors: [
+                    AppColors.primary.withOpacity(0.08),
+                    AppColors.background.withOpacity(0.0),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // المحتوى
+          SafeArea(
             child: Column(
               children: [
 
-                const SizedBox(height: 16),
-
-                // ── اسم اللعبة ──────────────────────────
-                AnimatedBuilder(
-                  animation: _glowAnimation,
-                  builder: (_, __) => ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [
-                        AppColors.primaryLight,
-                        AppColors.primary,
-                        AppColors.primaryDark,
-                      ],
-                    ).createShader(bounds),
-                    child: Text(
-                      'منو أذكى ؟',
-                      style: TextStyle(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 3,
-                        shadows: [
-                          Shadow(
-                            color: AppColors.primary.withOpacity(
-                                0.5 * _glowAnimation.value),
-                            blurRadius: 20,
-                          ),
-                        ],
+                // AppBar
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.leaderboard,
+                            color: AppColors.primary),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const LeaderboardScreen()),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                const Text(
-                  'واجهني ونشوف منو الأذكى',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.primary,
-                    letterSpacing: 2,
-                    fontStyle: FontStyle.italic,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-
-                const SizedBox(height: 24),
-
-                // ══════════════════════════════════════
-                // الأزرار الرئيسية
-                // ══════════════════════════════════════
-
-                // ١. ابدأ اللعب
-                _buildButton(
-                  emoji: '🎮',
-                  label: 'ابدأ اللعب',
-                  isPrimary: true,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const DraftScreen()),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ٢. التحدي الملحمي الأسبوعي
-                _buildButton(
-                  emoji: '🦅',
-                  label: 'التحدي الملحمي الأسبوعي',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                        const WeeklyChallengeScreen()),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ٣. أضف سؤالك الخاص
-                _buildButton(
-                  emoji: '✍️',
-                  label: 'أضف سؤالك الخاص',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                        const UserQuestionsScreen()),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ٤. فئتي الخاصة
-                _buildButton(
-                  emoji: '🗂️',
-                  label: 'أنشئ فئتك الخاصة',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                        const CustomCategoriesScreen()),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ٥. اقتراحاتك تهمنا
-                _buildButton(
-                  emoji: '💬',
-                  label: 'اقتراحاتك تهمنا',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                        const SuggestionsScreen()),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // ── التحدي الأسبوعي — بطاقة مختصرة ────
-                _WeeklyChallengeCard(),
-
-                const SizedBox(height: 20),
-
-                // ── كل يوم معلومة ───────────────────────
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                        color: AppColors.cardBorderGold, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                          color: AppColors.glowGold, blurRadius: 12),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.person_outline,
+                            color: AppColors.textPrimary),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) =>
+                              const ProfileScreen()),
+                        ),
+                      ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
+                ),
+
+                Expanded(
+                  child: FadeTransition(
+                    opacity: _entranceFade,
+                    child: SlideTransition(
+                      position: _entranceSlide,
+                      child: SingleChildScrollView(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: AppColors.primary, width: 1),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                            horizontal: 20),
+                        child: Column(
                           children: [
-                            Text('💡', style: TextStyle(fontSize: 14)),
-                            SizedBox(width: 6),
-                            Text(
-                              'كل يوم معلومة',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+
+                            const SizedBox(height: 8),
+
+                            // اسم اللعبة
+                            AnimatedBuilder(
+                              animation: _glowAnimation,
+                              builder: (_, __) => Column(
+                                children: [
+                                  ShaderMask(
+                                    shaderCallback: (bounds) =>
+                                        const LinearGradient(
+                                          colors: [
+                                            AppColors.primaryLight,
+                                            AppColors.primary,
+                                            AppColors.primaryDark,
+                                          ],
+                                        ).createShader(bounds),
+                                    child: Text(
+                                      'منو أذكى ؟',
+                                      style: TextStyle(
+                                        fontSize: 52,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                        letterSpacing: 4,
+                                        shadows: [
+                                          Shadow(
+                                            color: AppColors.primary
+                                                .withOpacity(0.6 *
+                                                _glowAnimation
+                                                    .value),
+                                            blurRadius: 30,
+                                          ),
+                                          Shadow(
+                                            color: AppColors.secondary
+                                                .withOpacity(0.2 *
+                                                _glowAnimation
+                                                    .value),
+                                            blurRadius: 50,
+                                          ),
+                                        ],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'واجهني ونشوف منو الأذكى',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: AppColors.primary
+                                          .withOpacity(0.8),
+                                      letterSpacing: 2,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
+
+                            const SizedBox(height: 28),
+
+                            // الأزرار
+                            _buildButton(
+                              emoji: '🎮',
+                              label: 'ابدأ اللعب',
+                              isPrimary: true,
+                              index: 0,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const DraftScreen()),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildButton(
+                              emoji: '🦅',
+                              label: 'التحدي الملحمي الأسبوعي',
+                              index: 1,
+                              accentColor: AppColors.secondary,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const WeeklyChallengeScreen()),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildButton(
+                              emoji: '✍️',
+                              label: 'أضف سؤالك الخاص',
+                              index: 2,
+                              accentColor: AppColors.correct,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const UserQuestionsScreen()),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildButton(
+                              emoji: '🗂️',
+                              label: 'أنشئ فئتك الخاصة',
+                              index: 3,
+                              accentColor: AppColors.gold,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const CustomCategoriesScreen()),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildButton(
+                              emoji: '💬',
+                              label: 'اقتراحاتك تهمنا',
+                              index: 4,
+                              accentColor: AppColors.purple,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const SuggestionsScreen()),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // بطاقة التحدي
+                            const _WeeklyChallengeCard(),
+
+                            const SizedBox(height: 20),
+
+                            // كل يوم معلومة
+                            _buildDepthCard(
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding:
+                                    const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary
+                                          .withOpacity(0.15),
+                                      borderRadius:
+                                      BorderRadius.circular(20),
+                                      border: Border.all(
+                                          color: AppColors.primary,
+                                          width: 1),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('💡',
+                                            style: TextStyle(
+                                                fontSize: 14)),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'كل يوم معلومة',
+                                          style: TextStyle(
+                                            color: AppColors.primary,
+                                            fontSize: 12,
+                                            fontWeight:
+                                            FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    _getDailyFact(),
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 15,
+                                      height: 1.6,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.right,
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // لحظات اللعبة
+                            Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      right: 4, bottom: 10),
+                                  child: ShaderMask(
+                                    shaderCallback: (bounds) =>
+                                        LinearGradient(colors: [
+                                          AppColors.primary,
+                                          AppColors.secondary,
+                                        ]).createShader(bounds),
+                                    child: const Text(
+                                      'لحظات اللعبة ✨',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 200,
+                                  child: PageView.builder(
+                                    controller: _imageController,
+                                    itemCount: _images.length,
+                                    onPageChanged: (i) => setState(
+                                            () => _currentImage = i),
+                                    itemBuilder: (ctx, i) => Padding(
+                                      padding:
+                                      const EdgeInsets.symmetric(
+                                          horizontal: 4),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                              16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: AppColors.primary
+                                                  .withOpacity(0.2),
+                                              blurRadius: 15,
+                                              offset:
+                                              const Offset(0, 5),
+                                            ),
+                                          ],
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius:
+                                          BorderRadius.circular(
+                                              16),
+                                          child: Image.asset(
+                                            _images[i],
+                                            fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (_, __, ___) =>
+                                                Container(
+                                                  color: AppColors
+                                                      .surfaceColor,
+                                                  child: const Center(
+                                                    child: Icon(
+                                                      Icons
+                                                          .image_not_supported,
+                                                      color: AppColors
+                                                          .textHint,
+                                                      size: 40,
+                                                    ),
+                                                  ),
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Row(
+                                  mainAxisAlignment:
+                                  MainAxisAlignment.center,
+                                  children: List.generate(
+                                    _images.length,
+                                        (i) => AnimatedContainer(
+                                      duration: const Duration(
+                                          milliseconds: 300),
+                                      margin: const EdgeInsets
+                                          .symmetric(horizontal: 3),
+                                      width: _currentImage == i
+                                          ? 20
+                                          : 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: _currentImage == i
+                                            ? AppColors.primary
+                                            : AppColors.textHint
+                                            .withOpacity(0.4),
+                                        borderRadius:
+                                        BorderRadius.circular(3),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // جملة الترحيب
+                            _buildDepthCard(
+                              child: const Text(
+                                'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.8,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _getDailyFact(),
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 15,
-                          height: 1.6,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        textAlign: TextAlign.right,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
-
-                // ── لحظات اللعبة ────────────────────────
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(right: 4, bottom: 10),
-                      child: Text(
-                        'لحظات اللعبة',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 200,
-                      child: PageView.builder(
-                        controller: _imageController,
-                        itemCount: _images.length,
-                        onPageChanged: (i) =>
-                            setState(() => _currentImage = i),
-                        itemBuilder: (ctx, i) => Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: Image.asset(
-                              _images[i],
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: AppColors.surfaceColor,
-                                child: const Center(
-                                  child: Icon(
-                                      Icons.image_not_supported,
-                                      color: AppColors.textHint,
-                                      size: 40),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _images.length,
-                            (i) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin:
-                          const EdgeInsets.symmetric(horizontal: 3),
-                          width: _currentImage == i ? 20 : 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: _currentImage == i
-                                ? AppColors.primary
-                                : AppColors.textHint.withOpacity(0.4),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                // ── جملة الترحيب ─────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                        color: AppColors.cardBorderGold, width: 1),
-                  ),
-                  child: const Text(
-                    'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                      height: 1.8,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-
-                const SizedBox(height: 24),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
 // ==============================
-// بطاقة التحدي الأسبوعي المختصرة
+// بطاقة التحدي الأسبوعي
 // ==============================
 class _WeeklyChallengeCard extends StatefulWidget {
+  const _WeeklyChallengeCard();
+
   @override
   State<_WeeklyChallengeCard> createState() =>
       _WeeklyChallengeCardState();
 }
 
-class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard> {
+class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
+    with SingleTickerProviderStateMixin {
   Map<String, dynamic>? _challenge;
   bool _isLoading = true;
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _shimmerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _shimmerController, curve: Curves.easeInOut),
+    );
     _load();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -569,7 +832,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard> {
     if (_isLoading || _challenge == null) return const SizedBox();
 
     final target = _challenge!['target'] as int;
-    const progress = 3; // تجريبي
+    const progress = 3;
     final percent = (progress / target).clamp(0.0, 1.0);
     final daysLeft = DateTime.parse(_challenge!['end_date'])
         .difference(DateTime.now())
@@ -581,99 +844,123 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard> {
         MaterialPageRoute(
             builder: (_) => const WeeklyChallengeScreen()),
       ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cardBorderGold, width: 1.5),
-          boxShadow: [
-            BoxShadow(color: AppColors.glowGold, blurRadius: 12),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(_challenge!['badge'],
-                    style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'التحدي الأسبوعي',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+      child: AnimatedBuilder(
+        animation: _shimmerAnimation,
+        builder: (_, __) => Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.cardBackground,
+                AppColors.secondary
+                    .withOpacity(0.05 * _shimmerAnimation.value),
+                AppColors.cardBackground,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppColors.secondary.withOpacity(
+                  0.3 + 0.3 * _shimmerAnimation.value),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.secondary
+                    .withOpacity(0.15 * _shimmerAnimation.value),
+                blurRadius: 20,
+                spreadRadius: 2,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(_challenge!['badge'],
+                      style: const TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'التحدي الأسبوعي',
+                          style: TextStyle(
+                            color: AppColors.secondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      Text(
-                        _challenge!['title'],
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
+                        Text(
+                          _challenge!['title'],
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.wrong.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                          color: AppColors.wrong.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '$daysLeft يوم',
+                      style: const TextStyle(
+                        color: AppColors.wrong,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: percent,
+                  backgroundColor: AppColors.surfaceColor,
+                  valueColor:
+                  AlwaysStoppedAnimation(AppColors.secondary),
+                  minHeight: 8,
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.wrong.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '$daysLeft يوم',
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '$progress / $target جولة',
                     style: const TextStyle(
-                      color: AppColors.wrong,
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                  Text(
+                    '${(percent * 100).toInt()}%',
+                    style: TextStyle(
+                      color: AppColors.secondary,
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: percent,
-                backgroundColor: AppColors.surfaceColor,
-                valueColor:
-                const AlwaysStoppedAnimation(AppColors.primary),
-                minHeight: 8,
+                ],
               ),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$progress / $target جولة',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-                Text(
-                  '${(percent * 100).toInt()}%',
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
