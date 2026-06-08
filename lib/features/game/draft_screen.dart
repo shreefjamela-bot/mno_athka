@@ -121,28 +121,28 @@ class _DraftScreenState extends State<DraftScreen> {
         return _buildPickGrid(
           title: '$team1Name — اختر 3 فئات',
           subtitle: 'اختيارات: ${team1Picks.length}/3',
-          teamColor: const Color(0xFF2D7A5F),
+          teamColor: AppColors.team1Color,
           onTap: _pickCategory,
         );
       case DraftPhase.team2Ban:
         return _buildBanGrid(
           title: '$team2Name — امنع فئة واحدة',
           subtitle: 'اختر فئة تمنعها من $team1Name',
-          banColor: const Color(0xFF8B2635),
+          banColor: AppColors.dangerRed,
           availableToBan: team1Picks,
         );
       case DraftPhase.team2Pick:
         return _buildPickGrid(
           title: '$team2Name — اختر 3 فئات',
           subtitle: 'اختيارات: ${team2Picks.length}/3',
-          teamColor: const Color(0xFF1A5F8A),
+          teamColor: AppColors.team2Color,
           onTap: _pickCategory,
         );
       case DraftPhase.team1Ban:
         return _buildBanGrid(
           title: '$team1Name — امنع فئة واحدة',
           subtitle: 'اختر فئة تمنعها من $team2Name',
-          banColor: const Color(0xFF8B2635),
+          banColor: AppColors.dangerRed,
           availableToBan: team2Picks,
         );
       case DraftPhase.summary:
@@ -158,23 +158,31 @@ class _DraftScreenState extends State<DraftScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'منو أذكى؟',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [AppColors.primaryLight, AppColors.primary],
+            ).createShader(bounds),
+            child: const Text(
+              'منو أذكى؟',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 3,
+              ),
             ),
           ),
           const SizedBox(height: 8),
           const Text(
             'ادخل أسماء الفريقين للبدء',
-            style: TextStyle(color: Colors.white54, fontSize: 16),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 48),
-          _nameField(_team1Controller, 'الفريق الأول', const Color(0xFF2D7A5F)),
+          _nameField(
+              _team1Controller, 'الفريق الأول', AppColors.team1Color),
           const SizedBox(height: 16),
-          _nameField(_team2Controller, 'الفريق الثاني', const Color(0xFF1A5F8A)),
+          _nameField(
+              _team2Controller, 'الفريق الثاني', AppColors.team2Color),
           const SizedBox(height: 48),
           SizedBox(
             width: double.infinity,
@@ -184,6 +192,8 @@ class _DraftScreenState extends State<DraftScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
+                shadowColor: AppColors.glowGold,
+                elevation: 8,
               ),
               onPressed: () {
                 setState(() {
@@ -197,10 +207,10 @@ class _DraftScreenState extends State<DraftScreen> {
                 });
               },
               child: const Text(
-                'ابدأ Draft',
+                'ابدأ Draft 🎯',
                 style: TextStyle(
                   fontSize: 20,
-                  color: Colors.black,
+                  color: AppColors.background,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -216,12 +226,12 @@ class _DraftScreenState extends State<DraftScreen> {
     return TextField(
       controller: ctrl,
       textAlign: TextAlign.center,
-      style: const TextStyle(color: Colors.white, fontSize: 18),
+      style: const TextStyle(color: AppColors.textPrimary, fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.white38),
+        hintStyle: const TextStyle(color: AppColors.textHint),
         filled: true,
-        fillColor: Colors.white10,
+        fillColor: AppColors.cardBackground,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: accent, width: 2),
@@ -232,7 +242,8 @@ class _DraftScreenState extends State<DraftScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: accent.withOpacity(0.5), width: 1.5),
+          borderSide:
+          BorderSide(color: accent.withOpacity(0.5), width: 1.5),
         ),
       ),
     );
@@ -250,15 +261,24 @@ class _DraftScreenState extends State<DraftScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
+
+          // هيدر الفريق
           Container(
             width: double.infinity,
-            padding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+                vertical: 14, horizontal: 20),
             decoration: BoxDecoration(
-              color: teamColor.withOpacity(0.15),
+              color: teamColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: teamColor, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: teamColor.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -267,24 +287,29 @@ class _DraftScreenState extends State<DraftScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: teamColor,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13),
                 ),
               ],
             ),
           ),
+
           const SizedBox(height: 16),
+
+          // شبكة الفئات
           Expanded(
             child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate:
+              const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                childAspectRatio: 1.1,
+                childAspectRatio: 0.8,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
               ),
@@ -295,24 +320,77 @@ class _DraftScreenState extends State<DraftScreen> {
                   onTap: () => onTap(cat),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white10,
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.cardBackground,
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                          color: teamColor.withOpacity(0.4), width: 1),
+                          color: teamColor.withOpacity(0.4),
+                          width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: teamColor.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(cat.emoji,
-                            style: const TextStyle(fontSize: 28)),
-                        const SizedBox(height: 6),
-                        Text(
-                          cat.title, // ✅ title مش name
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              color: Colors.white, fontSize: 11),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        // صورة/إيموجي الفئة
+                        Expanded(
+                          flex: 3,
+                          child: ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(14)),
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    teamColor.withOpacity(0.15),
+                                    AppColors.surfaceColor,
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  cat.emoji,
+                                  style:
+                                  const TextStyle(fontSize: 36),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // اسم الفئة
+                        Expanded(
+                          flex: 2,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: teamColor.withOpacity(0.15),
+                              borderRadius:
+                              const BorderRadius.vertical(
+                                  bottom: Radius.circular(14)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                cat.title,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: teamColor,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -341,12 +419,19 @@ class _DraftScreenState extends State<DraftScreen> {
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
-            padding:
-            const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            padding: const EdgeInsets.symmetric(
+                vertical: 14, horizontal: 20),
             decoration: BoxDecoration(
-              color: banColor.withOpacity(0.15),
+              color: banColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: banColor, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: banColor.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -355,14 +440,15 @@ class _DraftScreenState extends State<DraftScreen> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: banColor,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(color: Colors.white54, fontSize: 14),
+                  style: const TextStyle(
+                      color: AppColors.textSecondary, fontSize: 13),
                 ),
               ],
             ),
@@ -376,26 +462,66 @@ class _DraftScreenState extends State<DraftScreen> {
               return GestureDetector(
                 onTap: () => _banCategory(cat),
                 child: Container(
-                  width: 100,
-                  padding: const EdgeInsets.all(12),
+                  width: 110,
                   decoration: BoxDecoration(
-                    color: Colors.white10,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                         color: banColor.withOpacity(0.5), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: banColor.withOpacity(0.15),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Column(
                     children: [
-                      Text(cat.emoji,
-                          style: const TextStyle(fontSize: 30)),
-                      const SizedBox(height: 6),
-                      Text(
-                        cat.title, // ✅ title مش name
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 11),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(14)),
+                        child: Container(
+                          height: 70,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                banColor.withOpacity(0.15),
+                                AppColors.surfaceColor,
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          child: Center(
+                            child: Text(
+                              cat.emoji,
+                              style: const TextStyle(fontSize: 34),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: banColor.withOpacity(0.15),
+                          borderRadius: const BorderRadius.vertical(
+                              bottom: Radius.circular(14)),
+                        ),
+                        child: Text(
+                          cat.title,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: banColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -417,31 +543,40 @@ class _DraftScreenState extends State<DraftScreen> {
       child: Column(
         children: [
           const SizedBox(height: 20),
-          const Text(
-            '🏆 فئات المباراة',
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+          ShaderMask(
+            shaderCallback: (bounds) => const LinearGradient(
+              colors: [AppColors.primaryLight, AppColors.primary],
+            ).createShader(bounds),
+            child: const Text(
+              '🏆 فئات المباراة',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             '${active.length} فئات نشطة',
-            style: const TextStyle(color: Colors.white54, fontSize: 16),
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 24),
           Expanded(
             child: ListView.separated(
               itemCount: active.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) =>
+              const SizedBox(height: 10),
               itemBuilder: (ctx, i) {
                 final cat = active[i];
-                final fromTeam1 = team1Picks.any((c) => c.id == cat.id);
+                final fromTeam1 =
+                team1Picks.any((c) => c.id == cat.id);
                 final teamColor = fromTeam1
-                    ? const Color(0xFF2D7A5F)
-                    : const Color(0xFF1A5F8A);
-                final teamLabel = fromTeam1 ? team1Name : team2Name;
+                    ? AppColors.team1Color
+                    : AppColors.team2Color;
+                final teamLabel =
+                fromTeam1 ? team1Name : team2Name;
                 return Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 14),
@@ -449,7 +584,15 @@ class _DraftScreenState extends State<DraftScreen> {
                     color: teamColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: teamColor.withOpacity(0.6), width: 1.5),
+                        color: teamColor.withOpacity(0.5),
+                        width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: teamColor.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
@@ -458,9 +601,10 @@ class _DraftScreenState extends State<DraftScreen> {
                       const SizedBox(width: 14),
                       Expanded(
                         child: Text(
-                          cat.title, // ✅ title مش name
+                          cat.title,
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 16),
+                              color: AppColors.textPrimary,
+                              fontSize: 16),
                         ),
                       ),
                       Container(
@@ -469,10 +613,13 @@ class _DraftScreenState extends State<DraftScreen> {
                         decoration: BoxDecoration(
                           color: teamColor.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: teamColor.withOpacity(0.4)),
                         ),
                         child: Text(
                           teamLabel,
-                          style: TextStyle(color: teamColor, fontSize: 12),
+                          style: TextStyle(
+                              color: teamColor, fontSize: 12),
                         ),
                       ),
                     ],
@@ -490,6 +637,8 @@ class _DraftScreenState extends State<DraftScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
+                shadowColor: AppColors.glowGold,
+                elevation: 8,
               ),
               onPressed: () {
                 Navigator.pushReplacement(
@@ -512,7 +661,7 @@ class _DraftScreenState extends State<DraftScreen> {
                 'ابدأ المباراة! 🎮',
                 style: TextStyle(
                   fontSize: 20,
-                  color: Colors.black,
+                  color: AppColors.background,
                   fontWeight: FontWeight.bold,
                 ),
               ),
