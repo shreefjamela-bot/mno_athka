@@ -79,26 +79,46 @@ String _getDailyFact() {
 }
 
 // ==============================
-// رسام النجوم المتحركة
+// رسام النجوم المتلألئة
 // ==============================
 class _StarsPainter extends CustomPainter {
   final double progress;
   final List<Offset> stars;
   final List<double> sizes;
+  final List<double> twinkleOffsets;
 
   _StarsPainter({
     required this.progress,
     required this.stars,
     required this.sizes,
+    required this.twinkleOffsets,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < stars.length; i++) {
-      final opacity =
-      (sin(progress * 2 * pi + i) * 0.3 + 0.5).clamp(0.2, 0.8);
+      // بعض النجوم تتلألأ بسرعة والبعض ببطء
+      final twinkleSpeed = i % 3 == 0 ? 3.0 : i % 3 == 1 ? 1.5 : 0.8;
+      final opacity = (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) * 0.35 + 0.5)
+          .clamp(0.1, 0.9);
+
+      // نجوم أكبر تحصل على هالة
+      if (sizes[i] > 1.2) {
+        final haloPaint = Paint()
+          ..color = AppColors.primary.withOpacity(opacity * 0.3)
+          ..style = PaintingStyle.fill
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+        canvas.drawCircle(
+          Offset(stars[i].dx * size.width, stars[i].dy * size.height),
+          sizes[i] * 2.5,
+          haloPaint,
+        );
+      }
+
       final paint = Paint()
-        ..color = AppColors.primary.withOpacity(opacity)
+        ..color = i % 4 == 0
+            ? AppColors.secondary.withOpacity(opacity)
+            : AppColors.primary.withOpacity(opacity)
         ..style = PaintingStyle.fill;
       canvas.drawCircle(
         Offset(stars[i].dx * size.width, stars[i].dy * size.height),
@@ -139,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen>
   final _random = Random(42);
   late final List<Offset> _stars;
   late final List<double> _starSizes;
+  late final List<double> _twinkleOffsets;
 
   final List<String> _images = [
     'assets/images/wrg.png',
@@ -156,11 +177,13 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
 
     _stars = List.generate(
-      40,
+      50,
           (_) => Offset(_random.nextDouble(), _random.nextDouble()),
     );
     _starSizes = List.generate(
-        40, (_) => _random.nextDouble() * 1.5 + 0.5);
+        50, (_) => _random.nextDouble() * 2.0 + 0.5);
+    _twinkleOffsets = List.generate(
+        50, (_) => _random.nextDouble() * 2 * pi);
 
     _glowController = AnimationController(
       vsync: this,
@@ -173,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     _starsController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 6),
     )..repeat();
 
     _entranceController = AnimationController(
@@ -216,6 +239,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  // ── زر موحد النمط ────────────────────────────────
   Widget _buildButton({
     required String emoji,
     required String label,
@@ -224,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen>
     bool isPrimary = false,
     Color? accentColor,
   }) {
-    final color = accentColor ?? AppColors.primary;
+    final color = accentColor ?? AppColors.secondary;
     final isPressed = _pressedButton == index;
 
     return GestureDetector(
@@ -239,31 +263,36 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_, __) => AnimatedContainer(
           duration: const Duration(milliseconds: 100),
           width: double.infinity,
-          height: isPrimary ? 62 : 52,
+          height: isPrimary ? 64 : 54,
           transform: Matrix4.identity()
             ..translate(0.0, isPressed ? 3.0 : 0.0),
           decoration: BoxDecoration(
             gradient: isPrimary
                 ? LinearGradient(
               colors: [
-                AppColors.primaryDark,
-                AppColors.primary,
-                AppColors.primaryLight,
+                const Color(0xFFB8963E),
+                const Color(0xFFE8C97A),
+                const Color(0xFFF5DFA0),
+                const Color(0xFFE8C97A),
+                const Color(0xFFB8963E),
               ],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             )
                 : LinearGradient(
               colors: [
-                color.withOpacity(0.15),
-                color.withOpacity(0.05),
+                color.withOpacity(0.18),
+                color.withOpacity(0.06),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: color.withOpacity(isPrimary ? 0 : 0.5),
+            border: isPrimary
+                ? null
+                : Border.all(
+              color: color.withOpacity(
+                  0.5 + 0.3 * _glowAnimation.value),
               width: 1.5,
             ),
             boxShadow: isPressed
@@ -272,28 +301,25 @@ class _HomeScreenState extends State<HomeScreen>
                 ? [
               BoxShadow(
                 color: AppColors.primary.withOpacity(
-                    0.5 * _glowAnimation.value),
-                blurRadius: 20,
-                spreadRadius: 2,
+                    0.6 * _glowAnimation.value),
+                blurRadius: 25,
+                spreadRadius: 3,
                 offset: const Offset(0, 4),
               ),
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.2),
-                blurRadius: 40,
-                spreadRadius: 4,
+                color: AppColors.primaryLight
+                    .withOpacity(0.3),
+                blurRadius: 50,
+                spreadRadius: 6,
               ),
             ]
                 : [
               BoxShadow(
-                color: color.withOpacity(0.2),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color:
-                AppColors.background.withOpacity(0.5),
-                blurRadius: 4,
-                offset: const Offset(0, -2),
+                color: color.withOpacity(
+                    0.3 * _glowAnimation.value),
+                blurRadius: 16,
+                spreadRadius: 1,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -301,15 +327,17 @@ class _HomeScreenState extends State<HomeScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(emoji,
-                  style:
-                  TextStyle(fontSize: isPrimary ? 22 : 18)),
+                  style: TextStyle(
+                      fontSize: isPrimary ? 24 : 20)),
               const SizedBox(width: 10),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: isPrimary ? 20 : 15,
                   fontWeight: FontWeight.bold,
-                  color: isPrimary ? AppColors.background : color,
+                  color: isPrimary
+                      ? AppColors.background
+                      : color,
                   letterSpacing: isPrimary ? 2 : 0.5,
                 ),
               ),
@@ -348,11 +376,6 @@ class _HomeScreenState extends State<HomeScreen>
               spreadRadius: 1,
               offset: const Offset(0, 4),
             ),
-            BoxShadow(
-              color: AppColors.background.withOpacity(0.8),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
-            ),
           ],
         ),
         child: child,
@@ -367,7 +390,25 @@ class _HomeScreenState extends State<HomeScreen>
       body: Stack(
         children: [
 
-          // نجوم متحركة
+          // ── تدرج الخلفية الرئيسي ─────────────────
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF1A2A5E),
+                    AppColors.background,
+                    const Color(0xFF060A18),
+                  ],
+                  stops: const [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // ── نجوم متلألئة ─────────────────────────
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _starsController,
@@ -376,28 +417,41 @@ class _HomeScreenState extends State<HomeScreen>
                   progress: _starsController.value,
                   stars: _stars,
                   sizes: _starSizes,
+                  twinkleOffsets: _twinkleOffsets,
                 ),
               ),
             ),
           ),
 
-          // تدرج خلفي
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.5),
-                  radius: 1.2,
-                  colors: [
-                    AppColors.primary.withOpacity(0.08),
-                    AppColors.background.withOpacity(0.0),
-                  ],
+          // ── هالة ذهبية خلف العنوان ───────────────
+          Positioned(
+            top: 60,
+            left: 0,
+            right: 0,
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (_, __) => Center(
+                child: Container(
+                  width: 250,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.rectangle,
+                    borderRadius: BorderRadius.circular(60),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(
+                            0.15 * _glowAnimation.value),
+                        blurRadius: 60,
+                        spreadRadius: 20,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
 
-          // المحتوى
+          // ── المحتوى ──────────────────────────────
           SafeArea(
             child: Column(
               children: [
@@ -446,7 +500,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                             const SizedBox(height: 8),
 
-                            // اسم اللعبة
+                            // ── اسم اللعبة ──────────
                             AnimatedBuilder(
                               animation: _glowAnimation,
                               builder: (_, __) => Column(
@@ -456,6 +510,7 @@ class _HomeScreenState extends State<HomeScreen>
                                         const LinearGradient(
                                           colors: [
                                             AppColors.primaryLight,
+                                            Color(0xFFF5DFA0),
                                             AppColors.primary,
                                             AppColors.primaryDark,
                                           ],
@@ -463,31 +518,31 @@ class _HomeScreenState extends State<HomeScreen>
                                     child: Text(
                                       'منو أذكى ؟',
                                       style: TextStyle(
-                                        fontSize: 52,
+                                        fontSize: 58,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.white,
-                                        letterSpacing: 4,
+                                        letterSpacing: 5,
                                         shadows: [
                                           Shadow(
                                             color: AppColors.primary
-                                                .withOpacity(0.6 *
+                                                .withOpacity(0.7 *
                                                 _glowAnimation
                                                     .value),
-                                            blurRadius: 30,
+                                            blurRadius: 35,
                                           ),
                                           Shadow(
                                             color: AppColors.secondary
-                                                .withOpacity(0.2 *
+                                                .withOpacity(0.3 *
                                                 _glowAnimation
                                                     .value),
-                                            blurRadius: 50,
+                                            blurRadius: 60,
                                           ),
                                         ],
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(height: 6),
                                   Text(
                                     'واجهني ونشوف منو الأذكى',
                                     style: TextStyle(
@@ -505,7 +560,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                             const SizedBox(height: 28),
 
-                            // الأزرار
+                            // ── الأزرار ─────────────
                             _buildButton(
                               emoji: '🎮',
                               label: 'ابدأ اللعب',
@@ -521,7 +576,7 @@ class _HomeScreenState extends State<HomeScreen>
                             const SizedBox(height: 10),
                             _buildButton(
                               emoji: '🦅',
-                              label: 'التحدي الملحمي الأسبوعي',
+                              label: 'التحدي الأسبوعي',
                               index: 1,
                               accentColor: AppColors.secondary,
                               onTap: () => Navigator.push(
@@ -534,7 +589,7 @@ class _HomeScreenState extends State<HomeScreen>
                             const SizedBox(height: 10),
                             _buildButton(
                               emoji: '✍️',
-                              label: 'أضف سؤالك الخاص',
+                              label: 'أضف سؤالك',
                               index: 2,
                               accentColor: AppColors.correct,
                               onTap: () => Navigator.push(
@@ -547,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen>
                             const SizedBox(height: 10),
                             _buildButton(
                               emoji: '🗂️',
-                              label: 'أنشئ فئتك الخاصة',
+                              label: 'فئتك الخاصة',
                               index: 3,
                               accentColor: AppColors.gold,
                               onTap: () => Navigator.push(
@@ -573,12 +628,12 @@ class _HomeScreenState extends State<HomeScreen>
 
                             const SizedBox(height: 24),
 
-                            // بطاقة التحدي
+                            // ── بطاقة التحدي ─────────
                             const _WeeklyChallengeCard(),
 
                             const SizedBox(height: 20),
 
-                            // كل يوم معلومة
+                            // ── كل يوم معلومة ────────
                             _buildDepthCard(
                               child: Column(
                                 crossAxisAlignment:
@@ -634,7 +689,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                             const SizedBox(height: 20),
 
-                            // لحظات اللعبة
+                            // ── لحظات اللعبة ─────────
                             Column(
                               crossAxisAlignment:
                               CrossAxisAlignment.start,
@@ -723,9 +778,8 @@ class _HomeScreenState extends State<HomeScreen>
                                           milliseconds: 300),
                                       margin: const EdgeInsets
                                           .symmetric(horizontal: 3),
-                                      width: _currentImage == i
-                                          ? 20
-                                          : 6,
+                                      width:
+                                      _currentImage == i ? 20 : 6,
                                       height: 6,
                                       decoration: BoxDecoration(
                                         color: _currentImage == i
@@ -743,7 +797,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                             const SizedBox(height: 20),
 
-                            // جملة الترحيب
+                            // ── جملة الترحيب ──────────
                             _buildDepthCard(
                               child: const Text(
                                 'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',

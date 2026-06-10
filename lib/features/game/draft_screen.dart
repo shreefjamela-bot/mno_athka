@@ -12,6 +12,54 @@ import '../../data/repositories/categories_data.dart';
 import '../../data/models/category_model.dart';
 import 'match_board_screen.dart';
 
+// ==============================
+// خريطة صور الفئات
+// ==============================
+const Map<String, String> _categoryImages = {
+  'الحرب العالمية': 'assets/images/categories/harb.png',
+  'كرة قدم عالمية': 'assets/images/categories/koora.png',
+  'الأكلات العالمية': 'assets/images/categories/aklat.png',
+  'كأس العالم': 'assets/images/categories/kas.png',
+  'رياضة': 'assets/images/categories/riyada.png',
+  'سبيستون': 'assets/images/categories/siston.png',
+  'السوشل ميديا': 'assets/images/categories/social.png',
+  'شخصيات ورموز': 'assets/images/categories/characters.png',
+  'مسلسلات': 'assets/images/categories/mosalsal.png',
+  'أفلام': 'assets/images/categories/aflam.png',
+  'خرايط': 'assets/images/categories/maps.png',
+  'من قال هذه المقولة': 'assets/images/categories/maqola.png',
+  'قصص الأنبياء': 'assets/images/categories/anbiya.png',
+  'منتجات': 'assets/images/categories/products.png',
+  'طبيعت': 'assets/images/categories/tabea.png',
+  'السعودية': 'assets/images/categories/saudi.png',
+  'شغل مخك': 'assets/images/categories/shoghl.png',
+  'أمثال وألغاز': 'assets/images/categories/amthal.png',
+  'الكويت': 'assets/images/categories/kuwait.png',
+  'كتب وروايات': 'assets/images/categories/kutub.png',
+  'خمن الشخصية من صورة/فيديو AI': 'assets/images/categories/ai.png',
+  'معلومات عامة': 'assets/images/categories/general.png',
+  'محمد الفاتح': 'assets/images/categories/fatih.png',
+  'الصحابة': 'assets/images/categories/sahaba.png',
+  'الخليج العربي': 'assets/images/categories/gulf.png',
+  'اكتشف الخط': 'assets/images/categories/khat.png',
+  'اختراعات': 'assets/images/categories/ikhtiraat.png',
+  'مسلسلات تاريخية': 'assets/images/categories/tarikh.png',
+  'فن خليجي': 'assets/images/categories/fan.png',
+  'بنات وبس': 'assets/images/categories/banat.png',
+  'انمي': 'assets/images/categories/japan.png',
+  'عالم الحيوان': 'assets/images/categories/animals.png',
+  'اكمل الجملة': 'assets/images/categories/jumla.png',
+  'أعلام وشعارات': 'assets/images/categories/flags.png',
+  'لغة وأدب وشعر': 'assets/images/categories/luga.png',
+  'معالم دول': 'assets/images/categories/maalim.png',
+  'الكلاسيكو': 'assets/images/categories/classico.png',
+  'حضارات ودول': 'assets/images/categories/hisabat.png',
+  'سيارات': 'assets/images/categories/cars.png',
+  'عجائب العالم': 'assets/images/categories/ajayeb.png',
+  'أهل البيت': 'assets/images/categories/ahlbayt.png',
+  'طربيات': 'assets/images/categories/tarb.png',
+};
+
 class DraftScreen extends StatefulWidget {
   const DraftScreen({super.key});
 
@@ -100,6 +148,44 @@ class _DraftScreenState extends State<DraftScreen> {
     });
   }
 
+  Widget _categoryImage(CategoryModel cat, Color teamColor) {
+    final imagePath = _categoryImages[cat.title];
+    return ClipRRect(
+      borderRadius:
+      const BorderRadius.vertical(top: Radius.circular(14)),
+      child: imagePath != null
+          ? Image.asset(
+        imagePath,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) =>
+            _emojiPlaceholder(cat.emoji, teamColor),
+      )
+          : _emojiPlaceholder(cat.emoji, teamColor),
+    );
+  }
+
+  Widget _emojiPlaceholder(String emoji, Color color) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withOpacity(0.2),
+            AppColors.surfaceColor,
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Center(
+        child: Text(emoji, style: const TextStyle(fontSize: 36)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,7 +236,6 @@ class _DraftScreenState extends State<DraftScreen> {
     }
   }
 
-  // ── شاشة إدخال الأسماء ──────────────────────────────
   Widget _buildEnterNames() {
     return Padding(
       key: const ValueKey('enterNames'),
@@ -175,7 +260,8 @@ class _DraftScreenState extends State<DraftScreen> {
           const SizedBox(height: 8),
           const Text(
             'ادخل أسماء الفريقين للبدء',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+            style: TextStyle(
+                color: AppColors.textSecondary, fontSize: 16),
           ),
           const SizedBox(height: 48),
           _nameField(
@@ -226,7 +312,8 @@ class _DraftScreenState extends State<DraftScreen> {
     return TextField(
       controller: ctrl,
       textAlign: TextAlign.center,
-      style: const TextStyle(color: AppColors.textPrimary, fontSize: 18),
+      style: const TextStyle(
+          color: AppColors.textPrimary, fontSize: 18),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: AppColors.textHint),
@@ -242,14 +329,13 @@ class _DraftScreenState extends State<DraftScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-          BorderSide(color: accent.withOpacity(0.5), width: 1.5),
+          borderSide: BorderSide(
+              color: accent.withOpacity(0.5), width: 1.5),
         ),
       ),
     );
   }
 
-  // ── شبكة الاختيار ───────────────────────────────────
   Widget _buildPickGrid({
     required String title,
     required String subtitle,
@@ -262,8 +348,6 @@ class _DraftScreenState extends State<DraftScreen> {
       child: Column(
         children: [
           const SizedBox(height: 8),
-
-          // هيدر الفريق
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -295,15 +379,13 @@ class _DraftScreenState extends State<DraftScreen> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13),
+                      color: AppColors.textSecondary,
+                      fontSize: 13),
                 ),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
-          // شبكة الفئات
           Expanded(
             child: GridView.builder(
               gridDelegate:
@@ -335,36 +417,10 @@ class _DraftScreenState extends State<DraftScreen> {
                     ),
                     child: Column(
                       children: [
-                        // صورة/إيموجي الفئة
                         Expanded(
                           flex: 3,
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(14)),
-                            child: Container(
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    teamColor.withOpacity(0.15),
-                                    AppColors.surfaceColor,
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  cat.emoji,
-                                  style:
-                                  const TextStyle(fontSize: 36),
-                                ),
-                              ),
-                            ),
-                          ),
+                          child: _categoryImage(cat, teamColor),
                         ),
-
-                        // اسم الفئة
                         Expanded(
                           flex: 2,
                           child: Container(
@@ -404,7 +460,6 @@ class _DraftScreenState extends State<DraftScreen> {
     );
   }
 
-  // ── شبكة المنع ──────────────────────────────────────
   Widget _buildBanGrid({
     required String title,
     required String subtitle,
@@ -448,7 +503,8 @@ class _DraftScreenState extends State<DraftScreen> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 13),
+                      color: AppColors.textSecondary,
+                      fontSize: 13),
                 ),
               ],
             ),
@@ -467,7 +523,8 @@ class _DraftScreenState extends State<DraftScreen> {
                     color: AppColors.cardBackground,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                        color: banColor.withOpacity(0.5), width: 1.5),
+                        color: banColor.withOpacity(0.5),
+                        width: 1.5),
                     boxShadow: [
                       BoxShadow(
                         color: banColor.withOpacity(0.15),
@@ -478,29 +535,9 @@ class _DraftScreenState extends State<DraftScreen> {
                   ),
                   child: Column(
                     children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(14)),
-                        child: Container(
-                          height: 70,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                banColor.withOpacity(0.15),
-                                AppColors.surfaceColor,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              cat.emoji,
-                              style: const TextStyle(fontSize: 34),
-                            ),
-                          ),
-                        ),
+                      SizedBox(
+                        height: 80,
+                        child: _categoryImage(cat, banColor),
                       ),
                       Container(
                         width: double.infinity,
@@ -508,7 +545,8 @@ class _DraftScreenState extends State<DraftScreen> {
                             horizontal: 6, vertical: 6),
                         decoration: BoxDecoration(
                           color: banColor.withOpacity(0.15),
-                          borderRadius: const BorderRadius.vertical(
+                          borderRadius:
+                          const BorderRadius.vertical(
                               bottom: Radius.circular(14)),
                         ),
                         child: Text(
@@ -534,7 +572,6 @@ class _DraftScreenState extends State<DraftScreen> {
     );
   }
 
-  // ── شاشة الملخص النهائي ─────────────────────────────
   Widget _buildSummary() {
     final active = activeCategories;
     return Padding(
@@ -579,32 +616,31 @@ class _DraftScreenState extends State<DraftScreen> {
                 fromTeam1 ? team1Name : team2Name;
                 return Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 14),
+                      horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: teamColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                         color: teamColor.withOpacity(0.5),
                         width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: teamColor.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
                   ),
                   child: Row(
                     children: [
-                      Text(cat.emoji,
-                          style: const TextStyle(fontSize: 28)),
-                      const SizedBox(width: 14),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: _categoryImage(cat, teamColor),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           cat.title,
                           style: const TextStyle(
                               color: AppColors.textPrimary,
-                              fontSize: 16),
+                              fontSize: 15),
                         ),
                       ),
                       Container(
