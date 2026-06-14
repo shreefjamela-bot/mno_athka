@@ -52,7 +52,6 @@ class SupabaseRepository {
           .order('id');
 
       return response.map((row) {
-        // options قد تكون فاضية للأسئلة المفتوحة
         final rawOptions = row['options'];
         List<String> options = [];
         if (rawOptions != null) {
@@ -69,8 +68,8 @@ class SupabaseRepository {
           correctIndex: row['correct_index'] ?? 0,
           imageUrl: row['image_url'],
           videoUrl: row['video_url'],
+          answerImageUrl: row['answer_image_url'],
           timeLimitSeconds: row['time_limit_seconds'] ?? 120,
-          // الإجابة النصية للأسئلة المفتوحة
           answer: row['answer'],
         );
       }).toList();

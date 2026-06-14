@@ -5,6 +5,10 @@
 
 import 'dart:async';
 import 'dart:math';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -41,9 +45,6 @@ class MnoAthkaApp extends StatelessWidget {
   }
 }
 
-// ==============================
-// معلومة اليوم
-// ==============================
 const List<String> _dailyFacts = [
   '🧠 الدماغ البشري يولّد ما يكفي من الكهرباء لإضاءة مصباح صغير',
   '🌊 المحيطات تغطي أكثر من 70% من سطح الأرض',
@@ -72,14 +73,13 @@ const List<String> _dailyFacts = [
 ];
 
 String _getDailyFact() {
-  final dayOfYear = DateTime.now()
-      .difference(DateTime(DateTime.now().year))
-      .inDays;
+  final dayOfYear =
+      DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
   return _dailyFacts[dayOfYear % _dailyFacts.length];
 }
 
 // ==============================
-// رسام النجوم المتلألئة
+// رسام النجوم
 // ==============================
 class _StarsPainter extends CustomPainter {
   final double progress;
@@ -97,39 +97,145 @@ class _StarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < stars.length; i++) {
-      // بعض النجوم تتلألأ بسرعة والبعض ببطء
       final twinkleSpeed = i % 3 == 0 ? 3.0 : i % 3 == 1 ? 1.5 : 0.8;
-      final opacity = (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) * 0.35 + 0.5)
-          .clamp(0.1, 0.9);
+      final opacity =
+      (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) *
+          0.4 +
+          0.5)
+          .clamp(0.1, 1.0);
 
-      // نجوم أكبر تحصل على هالة
-      if (sizes[i] > 1.2) {
+      if (sizes[i] > 1.5) {
         final haloPaint = Paint()
-          ..color = AppColors.primary.withOpacity(opacity * 0.3)
+          ..color = const Color(0xFF4FC3F7).withOpacity(opacity * 0.3)
           ..style = PaintingStyle.fill
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
         canvas.drawCircle(
           Offset(stars[i].dx * size.width, stars[i].dy * size.height),
-          sizes[i] * 2.5,
+          sizes[i] * 3,
           haloPaint,
         );
       }
 
-      final paint = Paint()
-        ..color = i % 4 == 0
-            ? AppColors.secondary.withOpacity(opacity)
-            : AppColors.primary.withOpacity(opacity)
-        ..style = PaintingStyle.fill;
+      final color = i % 5 == 0
+          ? const Color(0xFFFFD700)
+          : i % 5 == 1
+          ? const Color(0xFF4FC3F7)
+          : Colors.white;
+
       canvas.drawCircle(
         Offset(stars[i].dx * size.width, stars[i].dy * size.height),
         sizes[i],
-        paint,
+        Paint()
+          ..color = color.withOpacity(opacity)
+          ..style = PaintingStyle.fill,
       );
     }
   }
 
   @override
   bool shouldRepaint(_StarsPainter old) => old.progress != progress;
+}
+
+// ==============================
+// ويدجت الفيديو — HTML Web
+// ==============================
+class _VideoCard extends StatefulWidget {
+  const _VideoCard();
+
+  @override
+  State<_VideoCard> createState() => _VideoCardState();
+}
+
+class _VideoCardState extends State<_VideoCard> {
+  static bool _registered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_registered) {
+      _registered = true;
+      ui.platformViewRegistry.registerViewFactory(
+        'mno-video-player',
+            (int viewId) {
+          final video = html.VideoElement()
+            ..src =
+                'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4'
+            ..autoplay = true
+            ..loop = true
+            ..muted = true
+            ..controls = true
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.objectFit = 'cover'
+            ..style.borderRadius = '20px'
+            ..style.background = 'transparent';
+          return video;
+        },
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // عنوان القسم
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              const Text('🎬', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 8),
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [Color(0xFFD4A843), Color(0xFF00D4FF)],
+                ).createShader(bounds),
+                child: const Text(
+                  'تعرف على اللعبة',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // بطاقة الفيديو
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF00D4FF).withOpacity(0.35),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1565C0).withOpacity(0.4),
+                blurRadius: 25,
+                spreadRadius: 3,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: const HtmlElementView(viewType: 'mno-video-player'),
+          ),
+        ),
+
+        const SizedBox(height: 6),
+        const Text(
+          '🔊 اضغط على الفيديو لتشغيل الصوت',
+          style: TextStyle(color: Color(0xFF4A5A7A), fontSize: 11),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
 }
 
 // ==============================
@@ -144,16 +250,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with TickerProviderStateMixin {
-
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
   late AnimationController _starsController;
   late AnimationController _entranceController;
   late Animation<double> _entranceFade;
   late Animation<Offset> _entranceSlide;
-  late PageController _imageController;
-  Timer? _imageTimer;
-  int _currentImage = 0;
   int? _pressedButton;
 
   final _random = Random(42);
@@ -161,72 +263,43 @@ class _HomeScreenState extends State<HomeScreen>
   late final List<double> _starSizes;
   late final List<double> _twinkleOffsets;
 
-  final List<String> _images = [
-    'assets/images/wrg.png',
-    'assets/images/sin.png',
-    'assets/images/kasalm.png',
-    'assets/images/kalb.png',
-    'assets/images/jwad.png',
-    'assets/images/ibn.png',
-    'assets/images/hamza.png',
-    'assets/images/banat.png',
-  ];
-
   @override
   void initState() {
     super.initState();
-
     _stars = List.generate(
-      50,
-          (_) => Offset(_random.nextDouble(), _random.nextDouble()),
-    );
-    _starSizes = List.generate(
-        50, (_) => _random.nextDouble() * 2.0 + 0.5);
-    _twinkleOffsets = List.generate(
-        50, (_) => _random.nextDouble() * 2 * pi);
+        70, (_) => Offset(_random.nextDouble(), _random.nextDouble()));
+    _starSizes =
+        List.generate(70, (_) => _random.nextDouble() * 2.2 + 0.4);
+    _twinkleOffsets =
+        List.generate(70, (_) => _random.nextDouble() * 2 * pi);
 
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 2500),
     )..repeat(reverse: true);
-    _glowAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _glowController, curve: Curves.easeInOut),
+    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
 
     _starsController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 5),
     )..repeat();
 
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 900),
     );
     _entranceFade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(
           parent: _entranceController, curve: Curves.easeOut),
     );
     _entranceSlide = Tween<Offset>(
-      begin: const Offset(0, 0.08),
+      begin: const Offset(0, 0.12),
       end: Offset.zero,
     ).animate(CurvedAnimation(
         parent: _entranceController, curve: Curves.easeOut));
     _entranceController.forward();
-
-    _imageController = PageController();
-    _imageTimer = Timer.periodic(const Duration(seconds: 3), (_) {
-      if (mounted) {
-        setState(() {
-          _currentImage = (_currentImage + 1) % _images.length;
-        });
-        _imageController.animateToPage(
-          _currentImage,
-          duration: const Duration(milliseconds: 500),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
   }
 
   @override
@@ -234,23 +307,15 @@ class _HomeScreenState extends State<HomeScreen>
     _glowController.dispose();
     _starsController.dispose();
     _entranceController.dispose();
-    _imageController.dispose();
-    _imageTimer?.cancel();
     super.dispose();
   }
 
-  // ── زر موحد النمط ────────────────────────────────
-  Widget _buildButton({
-    required String emoji,
+  Widget _buildPrimaryButton({
     required String label,
     required VoidCallback onTap,
     required int index,
-    bool isPrimary = false,
-    Color? accentColor,
   }) {
-    final color = accentColor ?? AppColors.secondary;
     final isPressed = _pressedButton == index;
-
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressedButton = index),
       onTapUp: (_) {
@@ -263,82 +328,119 @@ class _HomeScreenState extends State<HomeScreen>
         builder: (_, __) => AnimatedContainer(
           duration: const Duration(milliseconds: 100),
           width: double.infinity,
-          height: isPrimary ? 64 : 54,
+          height: 58,
           transform: Matrix4.identity()
             ..translate(0.0, isPressed ? 3.0 : 0.0),
           decoration: BoxDecoration(
-            gradient: isPrimary
-                ? LinearGradient(
+            gradient: const LinearGradient(
               colors: [
-                const Color(0xFFB8963E),
-                const Color(0xFFE8C97A),
-                const Color(0xFFF5DFA0),
-                const Color(0xFFE8C97A),
-                const Color(0xFFB8963E),
+                Color(0xFF7A5200),
+                Color(0xFFD4A843),
+                Color(0xFFF5DFA0),
+                Color(0xFFFFEA80),
+                Color(0xFFF5DFA0),
+                Color(0xFFD4A843),
+                Color(0xFF7A5200),
               ],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-            )
-                : LinearGradient(
-              colors: [
-                color.withOpacity(0.18),
-                color.withOpacity(0.06),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: isPrimary
-                ? null
-                : Border.all(
-              color: color.withOpacity(
-                  0.5 + 0.3 * _glowAnimation.value),
-              width: 1.5,
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: isPressed
+                ? []
+                : [
+              BoxShadow(
+                color: const Color(0xFFD4A843)
+                    .withOpacity(0.7 * _glowAnimation.value),
+                blurRadius: 35,
+                spreadRadius: 5,
+              ),
+              BoxShadow(
+                color: const Color(0xFFF0C855).withOpacity(0.3),
+                blurRadius: 60,
+                spreadRadius: 10,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('▶',
+                    style: TextStyle(
+                        fontSize: 18, color: Color(0xFF3A2800))),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2A1A00),
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNeonButton({
+    required String emoji,
+    required String label,
+    required VoidCallback onTap,
+    required int index,
+    required Color color,
+  }) {
+    final isPressed = _pressedButton == index;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressedButton = index),
+      onTapUp: (_) {
+        setState(() => _pressedButton = null);
+        onTap();
+      },
+      onTapCancel: () => setState(() => _pressedButton = null),
+      child: AnimatedBuilder(
+        animation: _glowAnimation,
+        builder: (_, __) => AnimatedContainer(
+          duration: const Duration(milliseconds: 100),
+          width: double.infinity,
+          height: 52,
+          transform: Matrix4.identity()
+            ..translate(0.0, isPressed ? 2.0 : 0.0),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.07),
+            borderRadius: BorderRadius.circular(36),
+            border: Border.all(
+              color:
+              color.withOpacity(0.55 + 0.35 * _glowAnimation.value),
+              width: 1.8,
             ),
             boxShadow: isPressed
                 ? []
-                : isPrimary
-                ? [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(
-                    0.6 * _glowAnimation.value),
-                blurRadius: 25,
-                spreadRadius: 3,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: AppColors.primaryLight
-                    .withOpacity(0.3),
-                blurRadius: 50,
-                spreadRadius: 6,
-              ),
-            ]
                 : [
               BoxShadow(
-                color: color.withOpacity(
-                    0.3 * _glowAnimation.value),
-                blurRadius: 16,
+                color: color
+                    .withOpacity(0.3 * _glowAnimation.value),
+                blurRadius: 20,
                 spreadRadius: 1,
-                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(emoji,
-                  style: TextStyle(
-                      fontSize: isPrimary ? 24 : 20)),
+              Text(emoji, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 10),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: isPrimary ? 20 : 15,
+                  fontSize: 15,
                   fontWeight: FontWeight.bold,
-                  color: isPrimary
-                      ? AppColors.background
-                      : color,
-                  letterSpacing: isPrimary ? 2 : 0.5,
+                  color: color,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
@@ -355,26 +457,19 @@ class _HomeScreenState extends State<HomeScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.cardBackground,
-              AppColors.surfaceColor.withOpacity(0.8),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(18),
+          color: const Color(0xFF0A1628).withOpacity(0.85),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.cardBorderGold,
+            color: const Color(0xFF00D4FF)
+                .withOpacity(0.18 + 0.1 * _glowAnimation.value),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary
+              color: const Color(0xFF1A8FE3)
                   .withOpacity(0.1 * _glowAnimation.value),
               blurRadius: 20,
               spreadRadius: 1,
-              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -386,29 +481,73 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       body: Stack(
         children: [
 
-          // ── تدرج الخلفية الرئيسي ─────────────────
+          // ── خلفية ────────────────────────────────
           Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
+            child: Container(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF1A2A5E),
-                    AppColors.background,
-                    const Color(0xFF060A18),
+                    Color(0xFF050F2E),
+                    Color(0xFF081428),
+                    Color(0xFF040D20),
+                    Color(0xFF020810),
                   ],
-                  stops: const [0.0, 0.5, 1.0],
+                  stops: [0.0, 0.35, 0.65, 1.0],
                 ),
               ),
             ),
           ),
 
-          // ── نجوم متلألئة ─────────────────────────
+          Positioned(
+            top: -100,
+            left: -80,
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (_, __) => Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF1565C0)
+                          .withOpacity(0.15 * _glowAnimation.value),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          Positioned(
+            bottom: -120,
+            right: -80,
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (_, __) => Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF0D47A1)
+                          .withOpacity(0.12 * _glowAnimation.value),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // ── نجوم ─────────────────────────────────
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _starsController,
@@ -423,404 +562,314 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
 
-          // ── هالة ذهبية خلف العنوان ───────────────
-          Positioned(
-            top: 60,
-            left: 0,
-            right: 0,
-            child: AnimatedBuilder(
-              animation: _glowAnimation,
-              builder: (_, __) => Center(
-                child: Container(
-                  width: 250,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.rectangle,
-                    borderRadius: BorderRadius.circular(60),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(
-                            0.15 * _glowAnimation.value),
-                        blurRadius: 60,
-                        spreadRadius: 20,
-                      ),
-                    ],
+          // ── المحتوى ──────────────────────────────
+          SafeArea(
+            child: FadeTransition(
+              opacity: _entranceFade,
+              child: SlideTransition(
+                position: _entranceSlide,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+
+                        const SizedBox(height: 8),
+
+                        Row(
+                          children: [
+                            _buildIconBtn(
+                              icon: Icons.leaderboard_rounded,
+                              color: const Color(0xFFD4A843),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const LeaderboardScreen()),
+                              ),
+                            ),
+                            const Spacer(),
+                            _buildIconBtn(
+                              icon: Icons.person_outline_rounded,
+                              color: const Color(0xFF00D4FF),
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                    const ProfileScreen()),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // ── البطاقة الزجاجية ──────────
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.fromLTRB(
+                              24, 28, 24, 28),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D1E3D)
+                                .withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(28),
+                            border: Border.all(
+                              color: const Color(0xFF00D4FF)
+                                  .withOpacity(0.25),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF1565C0)
+                                    .withOpacity(0.3),
+                                blurRadius: 40,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            children: [
+                              AnimatedBuilder(
+                                animation: _glowAnimation,
+                                builder: (_, __) => Column(
+                                  children: [
+                                    ShaderMask(
+                                      shaderCallback: (bounds) =>
+                                          const LinearGradient(
+                                            colors: [
+                                              Color(0xFFF5DFA0),
+                                              Color(0xFFFFD700),
+                                              Color(0xFFF0C855),
+                                              Color(0xFFFFD700),
+                                            ],
+                                          ).createShader(bounds),
+                                      child: Text(
+                                        'منو أذكى؟',
+                                        style: TextStyle(
+                                          fontSize: 52,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                          letterSpacing: 3,
+                                          shadows: [
+                                            Shadow(
+                                              color: const Color(
+                                                  0xFFD4A843)
+                                                  .withOpacity(0.9 *
+                                                  _glowAnimation
+                                                      .value),
+                                              blurRadius: 40,
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'تحدى أصحابك الآن!',
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: const Color(0xFF00D4FF)
+                                            .withOpacity(0.9),
+                                        letterSpacing: 1.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: 28),
+
+                              _buildPrimaryButton(
+                                label: 'ابدأ اللعب',
+                                index: 0,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const DraftScreen()),
+                                ),
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              _buildNeonButton(
+                                emoji: '🏆',
+                                label: 'التحدي الأسبوعي',
+                                index: 1,
+                                color: const Color(0xFF00D4FF),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const WeeklyChallengeScreen()),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildNeonButton(
+                                emoji: '✍️',
+                                label: 'أضف سؤالك',
+                                index: 2,
+                                color: const Color(0xFF00E676),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const UserQuestionsScreen()),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildNeonButton(
+                                emoji: '🗂️',
+                                label: 'فئتك الخاصة',
+                                index: 3,
+                                color: const Color(0xFFD4A843),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const CustomCategoriesScreen()),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              _buildNeonButton(
+                                emoji: '💬',
+                                label: 'اقتراحاتك تهمنا',
+                                index: 4,
+                                color: const Color(0xFF7C4DFF),
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                      const SuggestionsScreen()),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // ── فيديو تعريفي ──────────────
+                        const _VideoCard(),
+
+                        const SizedBox(height: 20),
+
+                        // ── بطاقة التحدي ──────────────
+                        const _WeeklyChallengeCard(),
+
+                        const SizedBox(height: 20),
+
+                        // ── كل يوم معلومة ─────────────
+                        _buildDepthCard(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4A843)
+                                      .withOpacity(0.15),
+                                  borderRadius:
+                                  BorderRadius.circular(20),
+                                  border: Border.all(
+                                      color: const Color(0xFFD4A843),
+                                      width: 1),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('💡',
+                                        style:
+                                        TextStyle(fontSize: 14)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'كل يوم معلومة',
+                                      style: TextStyle(
+                                        color: Color(0xFFD4A843),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                _getDailyFact(),
+                                style: const TextStyle(
+                                  color: Color(0xFFF0F4FF),
+                                  fontSize: 15,
+                                  height: 1.6,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.right,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        _buildDepthCard(
+                          child: const Text(
+                            'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF8BA0C8),
+                              height: 1.8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+
+                        const SizedBox(height: 28),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-
-          // ── المحتوى ──────────────────────────────
-          SafeArea(
-            child: Column(
-              children: [
-
-                // AppBar
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.leaderboard,
-                            color: AppColors.primary),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                              const LeaderboardScreen()),
-                        ),
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.person_outline,
-                            color: AppColors.textPrimary),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) =>
-                              const ProfileScreen()),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                Expanded(
-                  child: FadeTransition(
-                    opacity: _entranceFade,
-                    child: SlideTransition(
-                      position: _entranceSlide,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20),
-                        child: Column(
-                          children: [
-
-                            const SizedBox(height: 8),
-
-                            // ── اسم اللعبة ──────────
-                            AnimatedBuilder(
-                              animation: _glowAnimation,
-                              builder: (_, __) => Column(
-                                children: [
-                                  ShaderMask(
-                                    shaderCallback: (bounds) =>
-                                        const LinearGradient(
-                                          colors: [
-                                            AppColors.primaryLight,
-                                            Color(0xFFF5DFA0),
-                                            AppColors.primary,
-                                            AppColors.primaryDark,
-                                          ],
-                                        ).createShader(bounds),
-                                    child: Text(
-                                      'منو أذكى ؟',
-                                      style: TextStyle(
-                                        fontSize: 58,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 5,
-                                        shadows: [
-                                          Shadow(
-                                            color: AppColors.primary
-                                                .withOpacity(0.7 *
-                                                _glowAnimation
-                                                    .value),
-                                            blurRadius: 35,
-                                          ),
-                                          Shadow(
-                                            color: AppColors.secondary
-                                                .withOpacity(0.3 *
-                                                _glowAnimation
-                                                    .value),
-                                            blurRadius: 60,
-                                          ),
-                                        ],
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    'واجهني ونشوف منو الأذكى',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: AppColors.primary
-                                          .withOpacity(0.8),
-                                      letterSpacing: 2,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 28),
-
-                            // ── الأزرار ─────────────
-                            _buildButton(
-                              emoji: '🎮',
-                              label: 'ابدأ اللعب',
-                              isPrimary: true,
-                              index: 0,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const DraftScreen()),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            _buildButton(
-                              emoji: '🦅',
-                              label: 'التحدي الأسبوعي',
-                              index: 1,
-                              accentColor: AppColors.secondary,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const WeeklyChallengeScreen()),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            _buildButton(
-                              emoji: '✍️',
-                              label: 'أضف سؤالك',
-                              index: 2,
-                              accentColor: AppColors.correct,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const UserQuestionsScreen()),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            _buildButton(
-                              emoji: '🗂️',
-                              label: 'فئتك الخاصة',
-                              index: 3,
-                              accentColor: AppColors.gold,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const CustomCategoriesScreen()),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            _buildButton(
-                              emoji: '💬',
-                              label: 'اقتراحاتك تهمنا',
-                              index: 4,
-                              accentColor: AppColors.purple,
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const SuggestionsScreen()),
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-
-                            // ── بطاقة التحدي ─────────
-                            const _WeeklyChallengeCard(),
-
-                            const SizedBox(height: 20),
-
-                            // ── كل يوم معلومة ────────
-                            _buildDepthCard(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding:
-                                    const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary
-                                          .withOpacity(0.15),
-                                      borderRadius:
-                                      BorderRadius.circular(20),
-                                      border: Border.all(
-                                          color: AppColors.primary,
-                                          width: 1),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text('💡',
-                                            style: TextStyle(
-                                                fontSize: 14)),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'كل يوم معلومة',
-                                          style: TextStyle(
-                                            color: AppColors.primary,
-                                            fontSize: 12,
-                                            fontWeight:
-                                            FontWeight.bold,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    _getDailyFact(),
-                                    style: const TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 15,
-                                      height: 1.6,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    textAlign: TextAlign.right,
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // ── لحظات اللعبة ─────────
-                            Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      right: 4, bottom: 10),
-                                  child: ShaderMask(
-                                    shaderCallback: (bounds) =>
-                                        LinearGradient(colors: [
-                                          AppColors.primary,
-                                          AppColors.secondary,
-                                        ]).createShader(bounds),
-                                    child: const Text(
-                                      'لحظات اللعبة ✨',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 200,
-                                  child: PageView.builder(
-                                    controller: _imageController,
-                                    itemCount: _images.length,
-                                    onPageChanged: (i) => setState(
-                                            () => _currentImage = i),
-                                    itemBuilder: (ctx, i) => Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 4),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              16),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: AppColors.primary
-                                                  .withOpacity(0.2),
-                                              blurRadius: 15,
-                                              offset:
-                                              const Offset(0, 5),
-                                            ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              16),
-                                          child: Image.asset(
-                                            _images[i],
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (_, __, ___) =>
-                                                Container(
-                                                  color: AppColors
-                                                      .surfaceColor,
-                                                  child: const Center(
-                                                    child: Icon(
-                                                      Icons
-                                                          .image_not_supported,
-                                                      color: AppColors
-                                                          .textHint,
-                                                      size: 40,
-                                                    ),
-                                                  ),
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  children: List.generate(
-                                    _images.length,
-                                        (i) => AnimatedContainer(
-                                      duration: const Duration(
-                                          milliseconds: 300),
-                                      margin: const EdgeInsets
-                                          .symmetric(horizontal: 3),
-                                      width:
-                                      _currentImage == i ? 20 : 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: _currentImage == i
-                                            ? AppColors.primary
-                                            : AppColors.textHint
-                                            .withOpacity(0.4),
-                                        borderRadius:
-                                        BorderRadius.circular(3),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            // ── جملة الترحيب ──────────
-                            _buildDepthCard(
-                              child: const Text(
-                                'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                  height: 1.8,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-
-                            const SizedBox(height: 24),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildIconBtn({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedBuilder(
+        animation: _glowAnimation,
+        builder: (_, __) => Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0A1628).withOpacity(0.8),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color:
+              color.withOpacity(0.4 + 0.2 * _glowAnimation.value),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.2 * _glowAnimation.value),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
       ),
     );
   }
@@ -904,29 +953,19 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.cardBackground,
-                AppColors.secondary
-                    .withOpacity(0.05 * _shimmerAnimation.value),
-                AppColors.cardBackground,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(18),
+            color: const Color(0xFF0A1628).withOpacity(0.85),
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: AppColors.secondary.withOpacity(
-                  0.3 + 0.3 * _shimmerAnimation.value),
+              color: const Color(0xFF00D4FF).withOpacity(
+                  0.25 + 0.25 * _shimmerAnimation.value),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.secondary
-                    .withOpacity(0.15 * _shimmerAnimation.value),
+                color: const Color(0xFF00D4FF)
+                    .withOpacity(0.1 * _shimmerAnimation.value),
                 blurRadius: 20,
                 spreadRadius: 2,
-                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -942,10 +981,10 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'التحدي الأسبوعي',
                           style: TextStyle(
-                            color: AppColors.secondary,
+                            color: Color(0xFF00D4FF),
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -953,7 +992,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                         Text(
                           _challenge!['title'],
                           style: const TextStyle(
-                            color: AppColors.textPrimary,
+                            color: Color(0xFFF0F4FF),
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                           ),
@@ -965,15 +1004,17 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: AppColors.wrong.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      color:
+                      const Color(0xFFFF4757).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: AppColors.wrong.withOpacity(0.3)),
+                          color: const Color(0xFFFF4757)
+                              .withOpacity(0.3)),
                     ),
                     child: Text(
                       '$daysLeft يوم',
                       style: const TextStyle(
-                        color: AppColors.wrong,
+                        color: Color(0xFFFF4757),
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -986,9 +1027,9 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                 borderRadius: BorderRadius.circular(6),
                 child: LinearProgressIndicator(
                   value: percent,
-                  backgroundColor: AppColors.surfaceColor,
-                  valueColor:
-                  AlwaysStoppedAnimation(AppColors.secondary),
+                  backgroundColor: const Color(0xFF0F1E35),
+                  valueColor: const AlwaysStoppedAnimation(
+                      Color(0xFF00D4FF)),
                   minHeight: 8,
                 ),
               ),
@@ -999,14 +1040,12 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                   Text(
                     '$progress / $target جولة',
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
+                        color: Color(0xFF8BA0C8), fontSize: 11),
                   ),
                   Text(
                     '${(percent * 100).toInt()}%',
-                    style: TextStyle(
-                      color: AppColors.secondary,
+                    style: const TextStyle(
+                      color: Color(0xFF00D4FF),
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),

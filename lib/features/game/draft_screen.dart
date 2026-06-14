@@ -91,6 +91,9 @@ class _DraftScreenState extends State<DraftScreen> {
   CategoryModel? team1Banned;
   CategoryModel? team2Banned;
 
+  // ── عدد الاختيارات المطلوبة لكل فريق ───────────
+  static const int _picksPerTeam = 4;
+
   @override
   void initState() {
     super.initState();
@@ -127,11 +130,11 @@ class _DraftScreenState extends State<DraftScreen> {
   void _pickCategory(CategoryModel cat) {
     setState(() {
       if (_phase == DraftPhase.team1Pick) {
-        if (team1Picks.length < 3) team1Picks.add(cat);
-        if (team1Picks.length == 3) _nextPhase();
+        if (team1Picks.length < _picksPerTeam) team1Picks.add(cat);
+        if (team1Picks.length == _picksPerTeam) _nextPhase();
       } else if (_phase == DraftPhase.team2Pick) {
-        if (team2Picks.length < 3) team2Picks.add(cat);
-        if (team2Picks.length == 3) _nextPhase();
+        if (team2Picks.length < _picksPerTeam) team2Picks.add(cat);
+        if (team2Picks.length == _picksPerTeam) _nextPhase();
       }
     });
   }
@@ -205,8 +208,8 @@ class _DraftScreenState extends State<DraftScreen> {
         return _buildEnterNames();
       case DraftPhase.team1Pick:
         return _buildPickGrid(
-          title: '$team1Name — اختر 3 فئات',
-          subtitle: 'اختيارات: ${team1Picks.length}/3',
+          title: '$team1Name — اختر $_picksPerTeam فئات',
+          subtitle: 'اختيارات: ${team1Picks.length}/$_picksPerTeam',
           teamColor: AppColors.team1Color,
           onTap: _pickCategory,
         );
@@ -219,8 +222,8 @@ class _DraftScreenState extends State<DraftScreen> {
         );
       case DraftPhase.team2Pick:
         return _buildPickGrid(
-          title: '$team2Name — اختر 3 فئات',
-          subtitle: 'اختيارات: ${team2Picks.length}/3',
+          title: '$team2Name — اختر $_picksPerTeam فئات',
+          subtitle: 'اختيارات: ${team2Picks.length}/$_picksPerTeam',
           teamColor: AppColors.team2Color,
           onTap: _pickCategory,
         );
@@ -263,13 +266,32 @@ class _DraftScreenState extends State<DraftScreen> {
             style: TextStyle(
                 color: AppColors.textSecondary, fontSize: 16),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 12),
+          // شرح آلية اللعب
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.cardBorderGold),
+            ),
+            child: const Text(
+              '📋 كل فريق يختار 4 فئات\n🚫 كل فريق يمنع فئة من الفريق الآخر\n⚔️ النتيجة: 6 فئات في المباراة',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+                height: 1.8,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 32),
           _nameField(
               _team1Controller, 'الفريق الأول', AppColors.team1Color),
           const SizedBox(height: 16),
           _nameField(
               _team2Controller, 'الفريق الثاني', AppColors.team2Color),
-          const SizedBox(height: 48),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -292,12 +314,12 @@ class _DraftScreenState extends State<DraftScreen> {
                   _phase = DraftPhase.team1Pick;
                 });
               },
-              child: const Text(
-                'ابدأ Draft 🎯',
-                style: TextStyle(
-                  fontSize: 20,
-                  color: AppColors.background,
-                  fontWeight: FontWeight.bold,
+    child: const Text(
+    'ابدأ Draft — منع فئة 🎯',
+    style: TextStyle(
+    fontSize: 20,
+    color: AppColors.background,
+    fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -381,6 +403,27 @@ class _DraftScreenState extends State<DraftScreen> {
                   style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 13),
+                ),
+                const SizedBox(height: 8),
+                // مؤشر التقدم
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_picksPerTeam, (i) {
+                    final picked = _phase == DraftPhase.team1Pick
+                        ? team1Picks.length
+                        : team2Picks.length;
+                    return Container(
+                      width: 28,
+                      height: 6,
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      decoration: BoxDecoration(
+                        color: i < picked
+                            ? teamColor
+                            : teamColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),

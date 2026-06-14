@@ -1,6 +1,6 @@
 // ==============================
-// ملف الثيم — ليلة كويتية
-// Kuwait Night Theme
+// ملف الثيم — ثيم شبابي عصري
+// Youthful Neon Theme
 // ==============================
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ abstract class AppTheme {
 
       colorScheme: ColorScheme.dark(
         primary: AppColors.primary,
-        secondary: AppColors.secondary,
+        secondary: AppColors.neonCyan,
         surface: AppColors.background,
         onPrimary: AppColors.background,
         onSecondary: AppColors.background,
@@ -23,11 +23,8 @@ abstract class AppTheme {
 
       scaffoldBackgroundColor: AppColors.background,
 
-      // ==============================
-      // شريط العنوان
-      // ==============================
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: AppColors.primary),
         titleTextStyle: TextStyle(
@@ -38,9 +35,6 @@ abstract class AppTheme {
         ),
       ),
 
-      // ==============================
-      // الأزرار
-      // ==============================
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -49,8 +43,9 @@ abstract class AppTheme {
             horizontal: 32,
             vertical: 16,
           ),
+          // Pill-shape
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(30),
           ),
           elevation: 0,
           shadowColor: AppColors.glowGold,
@@ -62,71 +57,57 @@ abstract class AppTheme {
         ),
       ),
 
-      // ==============================
-      // الكروت
-      // ==============================
       cardTheme: CardThemeData(
         color: AppColors.cardBackground,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(
-            color: AppColors.cardBorderGold,
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: AppColors.neonCyan.withOpacity(0.2),
             width: 1,
           ),
         ),
         margin: const EdgeInsets.all(8),
       ),
 
-      // ==============================
-      // حقول الإدخال
-      // ==============================
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceColor,
         hintStyle: const TextStyle(color: AppColors.textHint),
-        labelStyle: const TextStyle(color: AppColors.primary),
+        labelStyle: const TextStyle(color: AppColors.neonCyan),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.cardBorder),
+          borderRadius: BorderRadius.circular(30),
+          borderSide: BorderSide(
+              color: AppColors.neonCyan.withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide: BorderSide(
-              color: AppColors.primary.withOpacity(0.3), width: 1),
+              color: AppColors.neonCyan.withOpacity(0.2), width: 1),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(30),
           borderSide:
-          const BorderSide(color: AppColors.primary, width: 2),
+          BorderSide(color: AppColors.neonCyan, width: 2),
         ),
       ),
 
-      // ==============================
-      // شريط التقدم
-      // ==============================
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: AppColors.neonCyan,
         linearTrackColor: AppColors.surfaceColor,
       ),
 
-      // ==============================
-      // Divider
-      // ==============================
-      dividerTheme: const DividerThemeData(
-        color: AppColors.cardBorder,
+      dividerTheme: DividerThemeData(
+        color: AppColors.neonCyan.withOpacity(0.15),
         thickness: 1,
       ),
 
-      // ==============================
-      // النصوص
-      // ==============================
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           color: AppColors.primary,
-          fontSize: 42,
+          fontSize: 48,
           fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
+          letterSpacing: 2,
         ),
         headlineMedium: TextStyle(
           color: AppColors.textPrimary,
