@@ -38,7 +38,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
   int _roundsPlayed = 0;
   bool _bonus1000Used = false;
 
-  // ✅ حالة وسائل المساعدة — تحفظ عبر كل الأسئلة
   bool _team1CallUsed = false;
   bool _team1RevealUsed = false;
   bool _team1ExtendUsed = false;
@@ -89,12 +88,12 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
   void _showChallengeBanner() {
     final challenges = {
       'double_points':  ('⚡', 'نقطة مضاعفة', 'النقاط ×2 في أول جولة!'),
-      'bonus_1000':     ('🌟', 'سؤال الألف', 'سيظهر سؤال 1000 نقطة في المنتصف!'),
+      'bonus_1000':     ('🌟', 'سؤال الألف', 'سيظهر سؤال 1000 نقطة عند أول سؤال 600!'),
       'time_pressure':  ('⏱️', 'ضغط الوقت', 'كل سؤال 15 ثانية فقط!'),
       'random_start':   ('🔀', 'ترتيب عشوائي', 'تم تحديد من يبدأ عشوائياً!'),
       'double_question':('💥', 'سؤال مزدوج', 'أول سؤال — الفريقان يتنافسان!'),
       'swap_categories':('🔁', 'عكس الأدوار', 'فريق 1 يجيب عن فئات فريق 2!'),
-      'double_bet':     ('⏫', 'مضاعفة الرهان', 'قبل كل سؤال — راهن أو لا!'),
+      'double_bet':     ('⏫', 'مضاعفة الرهان', 'قبل كل سؤال 600 — راهن أو لا!'),
     };
 
     final data = challenges[widget.challenge];
@@ -176,9 +175,10 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
       return;
     }
 
+    // ✅ الرهان في المستوى الثالث فقط
     bool isBetting = false;
     int betAmount = 0;
-    if (widget.challenge == 'double_bet') {
+    if (widget.challenge == 'double_bet' && level == 3) {
       final bet = await _showBetDialog(category, level);
       if (bet != null) {
         isBetting = true;
@@ -186,7 +186,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
       }
     }
 
-    // ✅ نمرر حالة الوسائل للـ GameScreen
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       PageRouteBuilder(
@@ -213,7 +212,6 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
 
     if (result != null && mounted) {
       setState(() {
-        // ✅ نحفظ حالة الوسائل من النتيجة
         _team1CallUsed = result['team1CallUsed'] ?? _team1CallUsed;
         _team1RevealUsed = result['team1RevealUsed'] ?? _team1RevealUsed;
         _team1ExtendUsed = result['team1ExtendUsed'] ?? _team1ExtendUsed;
@@ -255,12 +253,9 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
         _currentTeam = _currentTeam == 1 ? 2 : 1;
       });
 
-      final totalCells = (widget.team1Categories.length +
-          widget.team2Categories.length) *
-          3;
-      final halfway = totalCells ~/ 2;
+      // ✅ سؤال الألف عند أول سؤال مستوى 3 فقط
       if (widget.challenge == 'bonus_1000' &&
-          _roundsPlayed == halfway &&
+          level == 3 &&
           !_bonus1000Used) {
         _bonus1000Used = true;
         await _showBonus1000Dialog();
