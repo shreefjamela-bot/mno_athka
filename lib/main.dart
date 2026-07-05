@@ -180,7 +180,6 @@ class _VideoCardState extends State<_VideoCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // عنوان القسم
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(
@@ -203,8 +202,6 @@ class _VideoCardState extends State<_VideoCard> {
             ],
           ),
         ),
-
-        // بطاقة الفيديو
         Container(
           height: 220,
           decoration: BoxDecoration(
@@ -226,7 +223,6 @@ class _VideoCardState extends State<_VideoCard> {
             child: const HtmlElementView(viewType: 'mno-video-player'),
           ),
         ),
-
         const SizedBox(height: 6),
         const Text(
           '🔊 اضغط على الفيديو لتشغيل الصوت',
@@ -608,21 +604,17 @@ class _HomeScreenState extends State<HomeScreen>
                         // ── البطاقة الزجاجية ──────────
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(
-                              24, 28, 24, 28),
+                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0D1E3D)
-                                .withOpacity(0.7),
+                            color: const Color(0xFF0D1E3D).withOpacity(0.7),
                             borderRadius: BorderRadius.circular(28),
                             border: Border.all(
-                              color: const Color(0xFF00D4FF)
-                                  .withOpacity(0.25),
+                              color: const Color(0xFF00D4FF).withOpacity(0.25),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF1565C0)
-                                    .withOpacity(0.3),
+                                color: const Color(0xFF1565C0).withOpacity(0.3),
                                 blurRadius: 40,
                                 spreadRadius: 5,
                               ),
@@ -630,55 +622,42 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           child: Column(
                             children: [
+
+                              // ── اللوغو ──────────────────
                               AnimatedBuilder(
                                 animation: _glowAnimation,
-                                builder: (_, __) => Column(
-                                  children: [
-                                    ShaderMask(
-                                      shaderCallback: (bounds) =>
-                                          const LinearGradient(
-                                            colors: [
-                                              Color(0xFFF5DFA0),
-                                              Color(0xFFFFD700),
-                                              Color(0xFFF0C855),
-                                              Color(0xFFFFD700),
-                                            ],
-                                          ).createShader(bounds),
-                                      child: Text(
-                                        'منو أذكى؟',
-                                        style: TextStyle(
-                                          fontSize: 52,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                          letterSpacing: 3,
-                                          shadows: [
-                                            Shadow(
-                                              color: const Color(
-                                                  0xFFD4A843)
-                                                  .withOpacity(0.9 *
-                                                  _glowAnimation
-                                                      .value),
-                                              blurRadius: 40,
-                                            ),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.center,
+                                builder: (_, __) => Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFFD4A843)
+                                            .withOpacity(0.4 * _glowAnimation.value),
+                                        blurRadius: 40,
+                                        spreadRadius: 5,
                                       ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'تحدى أصحابك الآن!',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        color: const Color(0xFF00D4FF)
-                                            .withOpacity(0.9),
-                                        letterSpacing: 1.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    height: 150,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // ── سطر تحت اللوغو ──────────
+                              Text(
+                                'تحدى أصحابك الآن!',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: const Color(0xFF00D4FF).withOpacity(0.9),
+                                  letterSpacing: 1.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
 
                               const SizedBox(height: 28),
@@ -689,8 +668,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (_) =>
-                                      const DraftScreen()),
+                                      builder: (_) => const DraftScreen()),
                                 ),
                               ),
 
@@ -766,27 +744,21 @@ class _HomeScreenState extends State<HomeScreen>
                         // ── كل يوم معلومة ─────────────
                         _buildDepthCard(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFD4A843)
-                                      .withOpacity(0.15),
-                                  borderRadius:
-                                  BorderRadius.circular(20),
+                                  color: const Color(0xFFD4A843).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                      color: const Color(0xFFD4A843),
-                                      width: 1),
+                                      color: const Color(0xFFD4A843), width: 1),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text('💡',
-                                        style:
-                                        TextStyle(fontSize: 14)),
+                                    Text('💡', style: TextStyle(fontSize: 14)),
                                     SizedBox(width: 6),
                                     Text(
                                       'كل يوم معلومة',
@@ -857,8 +829,7 @@ class _HomeScreenState extends State<HomeScreen>
             color: const Color(0xFF0A1628).withOpacity(0.8),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color:
-              color.withOpacity(0.4 + 0.2 * _glowAnimation.value),
+              color: color.withOpacity(0.4 + 0.2 * _glowAnimation.value),
               width: 1.5,
             ),
             boxShadow: [
@@ -882,8 +853,7 @@ class _WeeklyChallengeCard extends StatefulWidget {
   const _WeeklyChallengeCard();
 
   @override
-  State<_WeeklyChallengeCard> createState() =>
-      _WeeklyChallengeCardState();
+  State<_WeeklyChallengeCard> createState() => _WeeklyChallengeCardState();
 }
 
 class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
@@ -901,8 +871,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
     _shimmerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _shimmerController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
     _load();
   }
@@ -944,8 +913,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
-        MaterialPageRoute(
-            builder: (_) => const WeeklyChallengeScreen()),
+        MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen()),
       ),
       child: AnimatedBuilder(
         animation: _shimmerAnimation,
@@ -956,8 +924,8 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
             color: const Color(0xFF0A1628).withOpacity(0.85),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: const Color(0xFF00D4FF).withOpacity(
-                  0.25 + 0.25 * _shimmerAnimation.value),
+              color: const Color(0xFF00D4FF)
+                  .withOpacity(0.25 + 0.25 * _shimmerAnimation.value),
               width: 1.5,
             ),
             boxShadow: [
@@ -1004,12 +972,10 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color:
-                      const Color(0xFFFF4757).withOpacity(0.15),
+                      color: const Color(0xFFFF4757).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                          color: const Color(0xFFFF4757)
-                              .withOpacity(0.3)),
+                          color: const Color(0xFFFF4757).withOpacity(0.3)),
                     ),
                     child: Text(
                       '$daysLeft يوم',
@@ -1028,8 +994,8 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                 child: LinearProgressIndicator(
                   value: percent,
                   backgroundColor: const Color(0xFF0F1E35),
-                  valueColor: const AlwaysStoppedAnimation(
-                      Color(0xFF00D4FF)),
+                  valueColor:
+                  const AlwaysStoppedAnimation(Color(0xFF00D4FF)),
                   minHeight: 8,
                 ),
               ),
