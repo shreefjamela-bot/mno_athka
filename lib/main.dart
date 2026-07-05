@@ -99,9 +99,7 @@ class _StarsPainter extends CustomPainter {
     for (int i = 0; i < stars.length; i++) {
       final twinkleSpeed = i % 3 == 0 ? 3.0 : i % 3 == 1 ? 1.5 : 0.8;
       final opacity =
-      (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) *
-          0.4 +
-          0.5)
+      (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) * 0.4 + 0.5)
           .clamp(0.1, 1.0);
 
       if (sizes[i] > 1.5) {
@@ -134,6 +132,260 @@ class _StarsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_StarsPainter old) => old.progress != progress;
+}
+
+// ==============================
+// رسام اللوغو
+// ==============================
+class _LogoPainter extends CustomPainter {
+  final double glow;
+  _LogoPainter(this.glow);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+
+    final goldShader = LinearGradient(
+      colors: const [
+        Color(0xFF7A5200),
+        Color(0xFFD4A843),
+        Color(0xFFF5DFA0),
+        Color(0xFFD4A843),
+        Color(0xFF7A5200),
+      ],
+    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final goldStroke = Paint()
+      ..shader = goldShader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5;
+
+    final goldFill = Paint()
+      ..color = const Color(0xFFD4A843)
+      ..style = PaintingStyle.fill;
+
+    // توهج خلفي
+    final glowPaint = Paint()
+      ..color = const Color(0xFFD4A843).withOpacity(0.18 * glow)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 35);
+    canvas.drawCircle(Offset(cx, cy - 10), 90, glowPaint);
+
+    // إطار إسلامي
+    final framePath = Path()
+      ..moveTo(cx - 65, cy + 75)
+      ..lineTo(cx - 65, cy + 5)
+      ..quadraticBezierTo(cx - 65, cy - 40, cx, cy - 58)
+      ..quadraticBezierTo(cx + 65, cy - 40, cx + 65, cy + 5)
+      ..lineTo(cx + 65, cy + 75);
+    canvas.drawPath(framePath, goldStroke);
+
+    // قاعدة
+    final basePaint = Paint()
+      ..shader = goldShader
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    canvas.drawLine(Offset(cx - 75, cy + 75), Offset(cx + 75, cy + 75), basePaint);
+
+    // خط ثاني تحت القاعدة
+    final basePaint2 = Paint()
+      ..color = const Color(0xFFD4A843).withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawLine(Offset(cx - 65, cy + 82), Offset(cx + 65, cy + 82), basePaint2);
+
+    // نقاط الزوايا
+    canvas.drawCircle(Offset(cx - 75, cy + 75), 3.5, goldFill);
+    canvas.drawCircle(Offset(cx + 75, cy + 75), 3.5, goldFill);
+    canvas.drawCircle(Offset(cx - 65, cy + 82), 2, goldFill..color = const Color(0xFFD4A843).withOpacity(0.5));
+    canvas.drawCircle(Offset(cx + 65, cy + 82), 2, goldFill..color = const Color(0xFFD4A843).withOpacity(0.5));
+
+    // نجمة في القمة
+    goldFill.color = const Color(0xFFF5DFA0);
+    _drawStar(canvas, Offset(cx, cy - 63), 9, goldFill);
+
+    // دماغ
+    _drawBrain(canvas, Offset(cx, cy - 18));
+
+    // كلمة منو
+    final textPainterMno = TextPainter(
+      text: const TextSpan(
+        text: 'منو',
+        style: TextStyle(
+          color: Color(0xFFD4A843),
+          fontSize: 19,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 4,
+        ),
+      ),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.center,
+    )..layout();
+    textPainterMno.paint(
+      canvas,
+      Offset(cx - textPainterMno.width / 2, cy + 20),
+    );
+
+    // كلمة أذكى
+    final textPainterAthka = TextPainter(
+      text: TextSpan(
+        text: 'أذكى؟',
+        style: TextStyle(
+          foreground: Paint()
+            ..shader = LinearGradient(
+              colors: const [
+                Color(0xFF7A5200),
+                Color(0xFFD4A843),
+                Color(0xFFF5DFA0),
+                Color(0xFFD4A843),
+                Color(0xFF7A5200),
+              ],
+            ).createShader(Rect.fromLTWH(cx - 65, 0, 130, 50)),
+          fontSize: 34,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.center,
+    )..layout();
+    textPainterAthka.paint(
+      canvas,
+      Offset(cx - textPainterAthka.width / 2, cy + 40),
+    );
+
+    // سطر صغير
+    final subPainter = TextPainter(
+      text: const TextSpan(
+        text: 'مسابقات وتحديات ذكية',
+        style: TextStyle(
+          color: Color(0xFF8BA0C8),
+          fontSize: 10,
+          letterSpacing: 2,
+        ),
+      ),
+      textDirection: TextDirection.rtl,
+      textAlign: TextAlign.center,
+    )..layout();
+    subPainter.paint(
+      canvas,
+      Offset(cx - subPainter.width / 2, cy + 82),
+    );
+
+    // خط زخرفي تحت السطر الصغير
+    final dotPaint = Paint()
+      ..color = const Color(0xFFD4A843).withOpacity(0.5)
+      ..style = PaintingStyle.fill;
+    canvas.drawLine(
+      Offset(cx - 50, cy + 97),
+      Offset(cx + 50, cy + 97),
+      Paint()
+        ..color = const Color(0xFFD4A843).withOpacity(0.4)
+        ..strokeWidth = 0.8,
+    );
+    canvas.drawCircle(Offset(cx - 50, cy + 97), 2, dotPaint);
+    canvas.drawCircle(Offset(cx + 50, cy + 97), 2, dotPaint);
+    canvas.drawCircle(Offset(cx, cy + 97), 2.5, dotPaint..color = const Color(0xFFD4A843).withOpacity(0.7));
+  }
+
+  void _drawStar(Canvas canvas, Offset center, double r, Paint paint) {
+    final path = Path();
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * 36 - 90) * (pi / 180);
+      final radius = i.isEven ? r : r * 0.45;
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+    // حواف النجمة
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = const Color(0xFFD4A843)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.5,
+    );
+  }
+
+  void _drawBrain(Canvas canvas, Offset center) {
+    final brainFill = Paint()
+      ..color = const Color(0xFFD4A843)
+      ..style = PaintingStyle.fill;
+    final brainStroke = Paint()
+      ..color = const Color(0xFFF5DFA0)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+    final wrinkleStroke = Paint()
+      ..color = const Color(0xFF8B6914)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    // نصف يسار
+    final leftBrain = Path()
+      ..moveTo(center.dx - 3, center.dy + 2)
+      ..quadraticBezierTo(center.dx - 3, center.dy - 16, center.dx - 18, center.dy - 18)
+      ..quadraticBezierTo(center.dx - 28, center.dy - 17, center.dx - 26, center.dy - 7)
+      ..quadraticBezierTo(center.dx - 24, center.dy + 1, center.dx - 15, center.dy + 3)
+      ..quadraticBezierTo(center.dx - 9, center.dy + 7, center.dx - 3, center.dy + 5)
+      ..close();
+    canvas.drawPath(leftBrain, brainFill);
+    canvas.drawPath(leftBrain, brainStroke);
+
+    // تلافيف يسار
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 18, center.dy - 13), width: 10, height: 6), 0, pi, false, wrinkleStroke);
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 22, center.dy - 3), width: 10, height: 6), 0, pi, false, wrinkleStroke);
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 15, center.dy + 4), width: 8, height: 5), pi, pi, false, wrinkleStroke);
+
+    // نصف يمين
+    final rightBrain = Path()
+      ..moveTo(center.dx + 3, center.dy + 2)
+      ..quadraticBezierTo(center.dx + 3, center.dy - 16, center.dx + 18, center.dy - 18)
+      ..quadraticBezierTo(center.dx + 28, center.dy - 17, center.dx + 26, center.dy - 7)
+      ..quadraticBezierTo(center.dx + 24, center.dy + 1, center.dx + 15, center.dy + 3)
+      ..quadraticBezierTo(center.dx + 9, center.dy + 7, center.dx + 3, center.dy + 5)
+      ..close();
+    canvas.drawPath(rightBrain, brainFill);
+    canvas.drawPath(rightBrain, brainStroke);
+
+    // تلافيف يمين
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 18, center.dy - 13), width: 10, height: 6), 0, pi, false, wrinkleStroke);
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 22, center.dy - 3), width: 10, height: 6), 0, pi, false, wrinkleStroke);
+    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 15, center.dy + 4), width: 8, height: 5), pi, pi, false, wrinkleStroke);
+
+    // خط الفصل
+    canvas.drawLine(
+      Offset(center.dx, center.dy - 18),
+      Offset(center.dx, center.dy + 2),
+      Paint()
+        ..color = const Color(0xFFF5DFA0).withOpacity(0.5)
+        ..strokeWidth = 0.8,
+    );
+
+    // جذع الدماغ
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(center.dx - 5, center.dy + 5, 10, 10),
+        const Radius.circular(3),
+      ),
+      brainFill,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(center.dx - 5, center.dy + 5, 10, 10),
+        const Radius.circular(3),
+      ),
+      brainStroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_LogoPainter old) => old.glow != glow;
 }
 
 // ==============================
@@ -244,8 +496,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
   late AnimationController _starsController;
@@ -262,12 +513,9 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-    _stars = List.generate(
-        70, (_) => Offset(_random.nextDouble(), _random.nextDouble()));
-    _starSizes =
-        List.generate(70, (_) => _random.nextDouble() * 2.2 + 0.4);
-    _twinkleOffsets =
-        List.generate(70, (_) => _random.nextDouble() * 2 * pi);
+    _stars = List.generate(70, (_) => Offset(_random.nextDouble(), _random.nextDouble()));
+    _starSizes = List.generate(70, (_) => _random.nextDouble() * 2.2 + 0.4);
+    _twinkleOffsets = List.generate(70, (_) => _random.nextDouble() * 2 * pi);
 
     _glowController = AnimationController(
       vsync: this,
@@ -287,14 +535,12 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 900),
     );
     _entranceFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-          parent: _entranceController, curve: Curves.easeOut),
+      CurvedAnimation(parent: _entranceController, curve: Curves.easeOut),
     );
     _entranceSlide = Tween<Offset>(
       begin: const Offset(0, 0.12),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _entranceController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _entranceController, curve: Curves.easeOut));
     _entranceController.forward();
   }
 
@@ -325,8 +571,7 @@ class _HomeScreenState extends State<HomeScreen>
           duration: const Duration(milliseconds: 100),
           width: double.infinity,
           height: 58,
-          transform: Matrix4.identity()
-            ..translate(0.0, isPressed ? 3.0 : 0.0),
+          transform: Matrix4.identity()..translate(0.0, isPressed ? 3.0 : 0.0),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               colors: [
@@ -346,8 +591,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ? []
                 : [
               BoxShadow(
-                color: const Color(0xFFD4A843)
-                    .withOpacity(0.7 * _glowAnimation.value),
+                color: const Color(0xFFD4A843).withOpacity(0.7 * _glowAnimation.value),
                 blurRadius: 35,
                 spreadRadius: 5,
               ),
@@ -362,9 +606,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('▶',
-                    style: TextStyle(
-                        fontSize: 18, color: Color(0xFF3A2800))),
+                const Text('▶', style: TextStyle(fontSize: 18, color: Color(0xFF3A2800))),
                 const SizedBox(width: 10),
                 Text(
                   label,
@@ -404,22 +646,19 @@ class _HomeScreenState extends State<HomeScreen>
           duration: const Duration(milliseconds: 100),
           width: double.infinity,
           height: 52,
-          transform: Matrix4.identity()
-            ..translate(0.0, isPressed ? 2.0 : 0.0),
+          transform: Matrix4.identity()..translate(0.0, isPressed ? 2.0 : 0.0),
           decoration: BoxDecoration(
             color: color.withOpacity(0.07),
             borderRadius: BorderRadius.circular(36),
             border: Border.all(
-              color:
-              color.withOpacity(0.55 + 0.35 * _glowAnimation.value),
+              color: color.withOpacity(0.55 + 0.35 * _glowAnimation.value),
               width: 1.8,
             ),
             boxShadow: isPressed
                 ? []
                 : [
               BoxShadow(
-                color: color
-                    .withOpacity(0.3 * _glowAnimation.value),
+                color: color.withOpacity(0.3 * _glowAnimation.value),
                 blurRadius: 20,
                 spreadRadius: 1,
               ),
@@ -456,14 +695,12 @@ class _HomeScreenState extends State<HomeScreen>
           color: const Color(0xFF0A1628).withOpacity(0.85),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF00D4FF)
-                .withOpacity(0.18 + 0.1 * _glowAnimation.value),
+            color: const Color(0xFF00D4FF).withOpacity(0.18 + 0.1 * _glowAnimation.value),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1A8FE3)
-                  .withOpacity(0.1 * _glowAnimation.value),
+              color: const Color(0xFF1A8FE3).withOpacity(0.1 * _glowAnimation.value),
               blurRadius: 20,
               spreadRadius: 1,
             ),
@@ -480,7 +717,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: Stack(
         children: [
 
-          // ── خلفية ────────────────────────────────
+          // خلفية
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -511,8 +748,7 @@ class _HomeScreenState extends State<HomeScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF1565C0)
-                          .withOpacity(0.15 * _glowAnimation.value),
+                      const Color(0xFF1565C0).withOpacity(0.15 * _glowAnimation.value),
                       Colors.transparent,
                     ],
                   ),
@@ -533,8 +769,7 @@ class _HomeScreenState extends State<HomeScreen>
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF0D47A1)
-                          .withOpacity(0.12 * _glowAnimation.value),
+                      const Color(0xFF0D47A1).withOpacity(0.12 * _glowAnimation.value),
                       Colors.transparent,
                     ],
                   ),
@@ -543,7 +778,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
 
-          // ── نجوم ─────────────────────────────────
+          // نجوم
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _starsController,
@@ -558,7 +793,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ),
 
-          // ── المحتوى ──────────────────────────────
+          // المحتوى
           SafeArea(
             child: FadeTransition(
               opacity: _entranceFade,
@@ -566,8 +801,7 @@ class _HomeScreenState extends State<HomeScreen>
                 position: _entranceSlide,
                 child: SingleChildScrollView(
                   child: Padding(
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
 
@@ -580,9 +814,7 @@ class _HomeScreenState extends State<HomeScreen>
                               color: const Color(0xFFD4A843),
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const LeaderboardScreen()),
+                                MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
                               ),
                             ),
                             const Spacer(),
@@ -591,9 +823,7 @@ class _HomeScreenState extends State<HomeScreen>
                               color: const Color(0xFF00D4FF),
                               onTap: () => Navigator.push(
                                 context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                    const ProfileScreen()),
+                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
                               ),
                             ),
                           ],
@@ -601,7 +831,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                         const SizedBox(height: 16),
 
-                        // ── البطاقة الزجاجية ──────────
+                        // البطاقة الزجاجية
                         Container(
                           width: double.infinity,
                           padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
@@ -623,32 +853,18 @@ class _HomeScreenState extends State<HomeScreen>
                           child: Column(
                             children: [
 
-                              // ── اللوغو ──────────────────
+                              // اللوغو المرسوم
                               AnimatedBuilder(
                                 animation: _glowAnimation,
-                                builder: (_, __) => Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFFD4A843)
-                                            .withOpacity(0.4 * _glowAnimation.value),
-                                        blurRadius: 40,
-                                        spreadRadius: 5,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/logo.png',
-                                    height: 150,
-                                    fit: BoxFit.contain,
-                                  ),
+                                builder: (_, __) => CustomPaint(
+                                  size: const Size(280, 210),
+                                  painter: _LogoPainter(_glowAnimation.value),
                                 ),
                               ),
 
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
 
-                              // ── سطر تحت اللوغو ──────────
+                              // سطر تحت اللوغو
                               Text(
                                 'تحدى أصحابك الآن!',
                                 style: TextStyle(
@@ -667,8 +883,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 index: 0,
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) => const DraftScreen()),
+                                  MaterialPageRoute(builder: (_) => const DraftScreen()),
                                 ),
                               ),
 
@@ -681,9 +896,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: const Color(0xFF00D4FF),
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const WeeklyChallengeScreen()),
+                                  MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen()),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -694,9 +907,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: const Color(0xFF00E676),
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const UserQuestionsScreen()),
+                                  MaterialPageRoute(builder: (_) => const UserQuestionsScreen()),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -707,9 +918,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: const Color(0xFFD4A843),
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const CustomCategoriesScreen()),
+                                  MaterialPageRoute(builder: (_) => const CustomCategoriesScreen()),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -720,9 +929,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 color: const Color(0xFF7C4DFF),
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(
-                                      builder: (_) =>
-                                      const SuggestionsScreen()),
+                                  MaterialPageRoute(builder: (_) => const SuggestionsScreen()),
                                 ),
                               ),
                             ],
@@ -731,29 +938,27 @@ class _HomeScreenState extends State<HomeScreen>
 
                         const SizedBox(height: 20),
 
-                        // ── فيديو تعريفي ──────────────
+                        // فيديو تعريفي
                         const _VideoCard(),
 
                         const SizedBox(height: 20),
 
-                        // ── بطاقة التحدي ──────────────
+                        // بطاقة التحدي
                         const _WeeklyChallengeCard(),
 
                         const SizedBox(height: 20),
 
-                        // ── كل يوم معلومة ─────────────
+                        // كل يوم معلومة
                         _buildDepthCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 10, vertical: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFD4A843).withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                      color: const Color(0xFFD4A843), width: 1),
+                                  border: Border.all(color: const Color(0xFFD4A843), width: 1),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -942,8 +1147,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
             children: [
               Row(
                 children: [
-                  Text(_challenge!['badge'],
-                      style: const TextStyle(fontSize: 28)),
+                  Text(_challenge!['badge'], style: const TextStyle(fontSize: 28)),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -969,8 +1173,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFF4757).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
@@ -994,8 +1197,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                 child: LinearProgressIndicator(
                   value: percent,
                   backgroundColor: const Color(0xFF0F1E35),
-                  valueColor:
-                  const AlwaysStoppedAnimation(Color(0xFF00D4FF)),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF00D4FF)),
                   minHeight: 8,
                 ),
               ),
@@ -1005,8 +1207,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                 children: [
                   Text(
                     '$progress / $target جولة',
-                    style: const TextStyle(
-                        color: Color(0xFF8BA0C8), fontSize: 11),
+                    style: const TextStyle(color: Color(0xFF8BA0C8), fontSize: 11),
                   ),
                   Text(
                     '${(percent * 100).toInt()}%',
