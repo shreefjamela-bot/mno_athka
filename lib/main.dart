@@ -135,260 +135,6 @@ class _StarsPainter extends CustomPainter {
 }
 
 // ==============================
-// رسام اللوغو
-// ==============================
-class _LogoPainter extends CustomPainter {
-  final double glow;
-  _LogoPainter(this.glow);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    final goldShader = LinearGradient(
-      colors: const [
-        Color(0xFF7A5200),
-        Color(0xFFD4A843),
-        Color(0xFFF5DFA0),
-        Color(0xFFD4A843),
-        Color(0xFF7A5200),
-      ],
-    ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    final goldStroke = Paint()
-      ..shader = goldShader
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
-
-    final goldFill = Paint()
-      ..color = const Color(0xFFD4A843)
-      ..style = PaintingStyle.fill;
-
-    // توهج خلفي
-    final glowPaint = Paint()
-      ..color = const Color(0xFFD4A843).withOpacity(0.18 * glow)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 35);
-    canvas.drawCircle(Offset(cx, cy - 10), 90, glowPaint);
-
-    // إطار إسلامي
-    final framePath = Path()
-      ..moveTo(cx - 65, cy + 75)
-      ..lineTo(cx - 65, cy + 5)
-      ..quadraticBezierTo(cx - 65, cy - 40, cx, cy - 58)
-      ..quadraticBezierTo(cx + 65, cy - 40, cx + 65, cy + 5)
-      ..lineTo(cx + 65, cy + 75);
-    canvas.drawPath(framePath, goldStroke);
-
-    // قاعدة
-    final basePaint = Paint()
-      ..shader = goldShader
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-    canvas.drawLine(Offset(cx - 75, cy + 75), Offset(cx + 75, cy + 75), basePaint);
-
-    // خط ثاني تحت القاعدة
-    final basePaint2 = Paint()
-      ..color = const Color(0xFFD4A843).withOpacity(0.5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    canvas.drawLine(Offset(cx - 65, cy + 82), Offset(cx + 65, cy + 82), basePaint2);
-
-    // نقاط الزوايا
-    canvas.drawCircle(Offset(cx - 75, cy + 75), 3.5, goldFill);
-    canvas.drawCircle(Offset(cx + 75, cy + 75), 3.5, goldFill);
-    canvas.drawCircle(Offset(cx - 65, cy + 82), 2, goldFill..color = const Color(0xFFD4A843).withOpacity(0.5));
-    canvas.drawCircle(Offset(cx + 65, cy + 82), 2, goldFill..color = const Color(0xFFD4A843).withOpacity(0.5));
-
-    // نجمة في القمة
-    goldFill.color = const Color(0xFFF5DFA0);
-    _drawStar(canvas, Offset(cx, cy - 63), 9, goldFill);
-
-    // دماغ
-    _drawBrain(canvas, Offset(cx, cy - 18));
-
-    // كلمة منو
-    final textPainterMno = TextPainter(
-      text: const TextSpan(
-        text: 'منو',
-        style: TextStyle(
-          color: Color(0xFFD4A843),
-          fontSize: 19,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 4,
-        ),
-      ),
-      textDirection: TextDirection.rtl,
-      textAlign: TextAlign.center,
-    )..layout();
-    textPainterMno.paint(
-      canvas,
-      Offset(cx - textPainterMno.width / 2, cy + 20),
-    );
-
-    // كلمة أذكى
-    final textPainterAthka = TextPainter(
-      text: TextSpan(
-        text: 'أذكى؟',
-        style: TextStyle(
-          foreground: Paint()
-            ..shader = LinearGradient(
-              colors: const [
-                Color(0xFF7A5200),
-                Color(0xFFD4A843),
-                Color(0xFFF5DFA0),
-                Color(0xFFD4A843),
-                Color(0xFF7A5200),
-              ],
-            ).createShader(Rect.fromLTWH(cx - 65, 0, 130, 50)),
-          fontSize: 34,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textDirection: TextDirection.rtl,
-      textAlign: TextAlign.center,
-    )..layout();
-    textPainterAthka.paint(
-      canvas,
-      Offset(cx - textPainterAthka.width / 2, cy + 40),
-    );
-
-    // سطر صغير
-    final subPainter = TextPainter(
-      text: const TextSpan(
-        text: 'مسابقات وتحديات ذكية',
-        style: TextStyle(
-          color: Color(0xFF8BA0C8),
-          fontSize: 10,
-          letterSpacing: 2,
-        ),
-      ),
-      textDirection: TextDirection.rtl,
-      textAlign: TextAlign.center,
-    )..layout();
-    subPainter.paint(
-      canvas,
-      Offset(cx - subPainter.width / 2, cy + 82),
-    );
-
-    // خط زخرفي تحت السطر الصغير
-    final dotPaint = Paint()
-      ..color = const Color(0xFFD4A843).withOpacity(0.5)
-      ..style = PaintingStyle.fill;
-    canvas.drawLine(
-      Offset(cx - 50, cy + 97),
-      Offset(cx + 50, cy + 97),
-      Paint()
-        ..color = const Color(0xFFD4A843).withOpacity(0.4)
-        ..strokeWidth = 0.8,
-    );
-    canvas.drawCircle(Offset(cx - 50, cy + 97), 2, dotPaint);
-    canvas.drawCircle(Offset(cx + 50, cy + 97), 2, dotPaint);
-    canvas.drawCircle(Offset(cx, cy + 97), 2.5, dotPaint..color = const Color(0xFFD4A843).withOpacity(0.7));
-  }
-
-  void _drawStar(Canvas canvas, Offset center, double r, Paint paint) {
-    final path = Path();
-    for (int i = 0; i < 10; i++) {
-      final angle = (i * 36 - 90) * (pi / 180);
-      final radius = i.isEven ? r : r * 0.45;
-      final x = center.dx + radius * cos(angle);
-      final y = center.dy + radius * sin(angle);
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-    // حواف النجمة
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = const Color(0xFFD4A843)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.5,
-    );
-  }
-
-  void _drawBrain(Canvas canvas, Offset center) {
-    final brainFill = Paint()
-      ..color = const Color(0xFFD4A843)
-      ..style = PaintingStyle.fill;
-    final brainStroke = Paint()
-      ..color = const Color(0xFFF5DFA0)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.8;
-    final wrinkleStroke = Paint()
-      ..color = const Color(0xFF8B6914)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-
-    // نصف يسار
-    final leftBrain = Path()
-      ..moveTo(center.dx - 3, center.dy + 2)
-      ..quadraticBezierTo(center.dx - 3, center.dy - 16, center.dx - 18, center.dy - 18)
-      ..quadraticBezierTo(center.dx - 28, center.dy - 17, center.dx - 26, center.dy - 7)
-      ..quadraticBezierTo(center.dx - 24, center.dy + 1, center.dx - 15, center.dy + 3)
-      ..quadraticBezierTo(center.dx - 9, center.dy + 7, center.dx - 3, center.dy + 5)
-      ..close();
-    canvas.drawPath(leftBrain, brainFill);
-    canvas.drawPath(leftBrain, brainStroke);
-
-    // تلافيف يسار
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 18, center.dy - 13), width: 10, height: 6), 0, pi, false, wrinkleStroke);
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 22, center.dy - 3), width: 10, height: 6), 0, pi, false, wrinkleStroke);
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx - 15, center.dy + 4), width: 8, height: 5), pi, pi, false, wrinkleStroke);
-
-    // نصف يمين
-    final rightBrain = Path()
-      ..moveTo(center.dx + 3, center.dy + 2)
-      ..quadraticBezierTo(center.dx + 3, center.dy - 16, center.dx + 18, center.dy - 18)
-      ..quadraticBezierTo(center.dx + 28, center.dy - 17, center.dx + 26, center.dy - 7)
-      ..quadraticBezierTo(center.dx + 24, center.dy + 1, center.dx + 15, center.dy + 3)
-      ..quadraticBezierTo(center.dx + 9, center.dy + 7, center.dx + 3, center.dy + 5)
-      ..close();
-    canvas.drawPath(rightBrain, brainFill);
-    canvas.drawPath(rightBrain, brainStroke);
-
-    // تلافيف يمين
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 18, center.dy - 13), width: 10, height: 6), 0, pi, false, wrinkleStroke);
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 22, center.dy - 3), width: 10, height: 6), 0, pi, false, wrinkleStroke);
-    canvas.drawArc(Rect.fromCenter(center: Offset(center.dx + 15, center.dy + 4), width: 8, height: 5), pi, pi, false, wrinkleStroke);
-
-    // خط الفصل
-    canvas.drawLine(
-      Offset(center.dx, center.dy - 18),
-      Offset(center.dx, center.dy + 2),
-      Paint()
-        ..color = const Color(0xFFF5DFA0).withOpacity(0.5)
-        ..strokeWidth = 0.8,
-    );
-
-    // جذع الدماغ
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(center.dx - 5, center.dy + 5, 10, 10),
-        const Radius.circular(3),
-      ),
-      brainFill,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(center.dx - 5, center.dy + 5, 10, 10),
-        const Radius.circular(3),
-      ),
-      brainStroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_LogoPainter old) => old.glow != glow;
-}
-
-// ==============================
 // ويدجت الفيديو — HTML Web
 // ==============================
 class _VideoCard extends StatefulWidget {
@@ -484,6 +230,181 @@ class _VideoCardState extends State<_VideoCard> {
       ],
     );
   }
+}
+
+// ==============================
+// ويدجت اللوغو
+// ==============================
+class _LogoWidget extends StatelessWidget {
+  final double glowValue;
+  const _LogoWidget({required this.glowValue});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 220,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // توهج خلفي
+          Container(
+            width: 160,
+            height: 160,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4A843).withOpacity(0.15 * glowValue),
+                  blurRadius: 60,
+                  spreadRadius: 20,
+                ),
+              ],
+            ),
+          ),
+
+          // الإطار الإسلامي
+          CustomPaint(
+            size: const Size(140, 180),
+            painter: _IslamicFramePainter(glowValue),
+          ),
+
+          // المحتوى داخل الإطار
+          Positioned(
+            top: 30,
+            child: Column(
+              children: [
+                // أيقونة الدماغ
+                const Text('🧠', style: TextStyle(fontSize: 36)),
+                const SizedBox(height: 6),
+                // كلمة منو
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [Color(0xFFD4A843), Color(0xFFF5DFA0), Color(0xFFD4A843)],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'منو',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                ),
+                // كلمة أذكى
+                ShaderMask(
+                  shaderCallback: (bounds) => const LinearGradient(
+                    colors: [
+                      Color(0xFF7A5200),
+                      Color(0xFFD4A843),
+                      Color(0xFFF5DFA0),
+                      Color(0xFFFFD700),
+                      Color(0xFFD4A843),
+                      Color(0xFF7A5200),
+                    ],
+                  ).createShader(bounds),
+                  child: const Text(
+                    'أذكى؟',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+                // سطر صغير
+                const Text(
+                  'مسابقات وتحديات ذكية',
+                  style: TextStyle(
+                    color: Color(0xFF8BA0C8),
+                    fontSize: 10,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IslamicFramePainter extends CustomPainter {
+  final double glow;
+  _IslamicFramePainter(this.glow);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+
+    final goldStroke = Paint()
+      ..shader = LinearGradient(
+        colors: const [
+          Color(0xFF7A5200),
+          Color(0xFFD4A843),
+          Color(0xFFF5DFA0),
+          Color(0xFFD4A843),
+          Color(0xFF7A5200),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final goldFill = Paint()
+      ..color = const Color(0xFFD4A843)
+      ..style = PaintingStyle.fill;
+
+    // قوس إسلامي في الأعلى
+    final archPath = Path()
+      ..moveTo(10, size.height - 10)
+      ..lineTo(10, size.height * 0.45)
+      ..quadraticBezierTo(10, size.height * 0.15, cx, 10)
+      ..quadraticBezierTo(size.width - 10, size.height * 0.15, size.width - 10, size.height * 0.45)
+      ..lineTo(size.width - 10, size.height - 10);
+    canvas.drawPath(archPath, goldStroke);
+
+    // قاعدة
+    canvas.drawLine(
+      Offset(0, size.height - 10),
+      Offset(size.width, size.height - 10),
+      goldStroke..strokeWidth = 2,
+    );
+    canvas.drawLine(
+      Offset(8, size.height - 4),
+      Offset(size.width - 8, size.height - 4),
+      Paint()
+        ..color = const Color(0xFFD4A843).withOpacity(0.4)
+        ..strokeWidth = 1,
+    );
+
+    // نقاط الزوايا
+    canvas.drawCircle(Offset(0, size.height - 10), 3, goldFill);
+    canvas.drawCircle(Offset(size.width, size.height - 10), 3, goldFill);
+
+    // نجمة في القمة
+    _drawStar(canvas, Offset(cx, 4), 7, goldFill..color = const Color(0xFFF5DFA0));
+  }
+
+  void _drawStar(Canvas canvas, Offset center, double r, Paint paint) {
+    final path = Path();
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * 36 - 90) * (pi / 180);
+      final radius = i.isEven ? r : r * 0.4;
+      final x = center.dx + radius * cos(angle);
+      final y = center.dy + radius * sin(angle);
+      if (i == 0) path.moveTo(x, y);
+      else path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_IslamicFramePainter old) => old.glow != glow;
 }
 
 // ==============================
@@ -853,13 +774,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           child: Column(
                             children: [
 
-                              // اللوغو المرسوم
+                              // اللوغو
                               AnimatedBuilder(
                                 animation: _glowAnimation,
-                                builder: (_, __) => CustomPaint(
-                                  size: const Size(280, 210),
-                                  painter: _LogoPainter(_glowAnimation.value),
-                                ),
+                                builder: (_, __) => _LogoWidget(glowValue: _glowAnimation.value),
                               ),
 
                               const SizedBox(height: 8),
