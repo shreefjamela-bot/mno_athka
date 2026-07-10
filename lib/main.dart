@@ -1,9 +1,8 @@
 // ==============================
-// الملف الرئيسي للتطبيق
-// اسم اللعبة: منو أذكى
+// الملف الرئيسي — منو أذكى
+// Luxury Dark Theme
 // ==============================
 
-import 'dart:async';
 import 'dart:math';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
@@ -73,10 +72,17 @@ const List<String> _dailyFacts = [
 ];
 
 String _getDailyFact() {
-  final dayOfYear =
-      DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
+  final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year)).inDays;
   return _dailyFacts[dayOfYear % _dailyFacts.length];
 }
+
+// ألوان الثيم الفاخر
+const _gold = Color(0xFFC49830);
+const _goldLight = Color(0xFFF0D060);
+const _goldDark = Color(0xFF6B4A10);
+const _bg = Color(0xFF080808);
+const _cardBg = Color(0xFF0E0E0E);
+const _goldText = Color(0xFF5A4820);
 
 // ==============================
 // رسام النجوم
@@ -97,34 +103,15 @@ class _StarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (int i = 0; i < stars.length; i++) {
-      final twinkleSpeed = i % 3 == 0 ? 3.0 : i % 3 == 1 ? 1.5 : 0.8;
+      final twinkleSpeed = i % 3 == 0 ? 2.0 : i % 3 == 1 ? 1.2 : 0.7;
       final opacity =
-      (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) * 0.4 + 0.5)
-          .clamp(0.1, 1.0);
-
-      if (sizes[i] > 1.5) {
-        final haloPaint = Paint()
-          ..color = const Color(0xFF4FC3F7).withOpacity(opacity * 0.3)
-          ..style = PaintingStyle.fill
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-        canvas.drawCircle(
-          Offset(stars[i].dx * size.width, stars[i].dy * size.height),
-          sizes[i] * 3,
-          haloPaint,
-        );
-      }
-
-      final color = i % 5 == 0
-          ? const Color(0xFFFFD700)
-          : i % 5 == 1
-          ? const Color(0xFF4FC3F7)
-          : Colors.white;
-
+      (sin(progress * 2 * pi * twinkleSpeed + twinkleOffsets[i]) * 0.3 + 0.4)
+          .clamp(0.05, 0.7);
       canvas.drawCircle(
         Offset(stars[i].dx * size.width, stars[i].dy * size.height),
         sizes[i],
         Paint()
-          ..color = color.withOpacity(opacity)
+          ..color = const Color(0xFFC49830).withOpacity(opacity)
           ..style = PaintingStyle.fill,
       );
     }
@@ -135,7 +122,7 @@ class _StarsPainter extends CustomPainter {
 }
 
 // ==============================
-// ويدجت الفيديو — HTML Web
+// فيديو تعريفي
 // ==============================
 class _VideoCard extends StatefulWidget {
   const _VideoCard();
@@ -156,8 +143,7 @@ class _VideoCardState extends State<_VideoCard> {
         'mno-video-player',
             (int viewId) {
           final video = html.VideoElement()
-            ..src =
-                'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4'
+            ..src = 'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4'
             ..autoplay = true
             ..loop = true
             ..muted = true
@@ -165,7 +151,7 @@ class _VideoCardState extends State<_VideoCard> {
             ..style.width = '100%'
             ..style.height = '100%'
             ..style.objectFit = 'cover'
-            ..style.borderRadius = '20px'
+            ..style.borderRadius = '12px'
             ..style.background = 'transparent';
           return video;
         },
@@ -175,155 +161,44 @@ class _VideoCardState extends State<_VideoCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              const Text('🎬', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 8),
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFFD4A843), Color(0xFF00D4FF)],
-                ).createShader(bounds),
-                child: const Text(
-                  'تعرف على اللعبة',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          height: 220,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF00D4FF).withOpacity(0.35),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF1565C0).withOpacity(0.4),
-                blurRadius: 25,
-                spreadRadius: 3,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: const HtmlElementView(viewType: 'mno-video-player'),
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '🔊 اضغط على الفيديو لتشغيل الصوت',
-          style: TextStyle(color: Color(0xFF4A5A7A), fontSize: 11),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-}
-
-// ==============================
-// ويدجت اللوغو
-// ==============================
-class _LogoWidget extends StatelessWidget {
-  final double glowValue;
-  const _LogoWidget({required this.glowValue});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 220,
-      child: Stack(
-        alignment: Alignment.center,
+    return _LuxuryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // توهج خلفي
-          Container(
-            width: 160,
-            height: 160,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFFD4A843).withOpacity(0.15 * glowValue),
-                  blurRadius: 60,
-                  spreadRadius: 20,
+          Row(
+            children: [
+              const Icon(Icons.play_circle_outline_rounded, color: _gold, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'تعرف على اللعبة',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  color: _gold.withOpacity(0.8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 2,
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 200,
+              child: const HtmlElementView(viewType: 'mno-video-player'),
             ),
           ),
-
-          // الإطار الإسلامي
-          CustomPaint(
-            size: const Size(140, 180),
-            painter: _IslamicFramePainter(glowValue),
-          ),
-
-          // المحتوى داخل الإطار
-          Positioned(
-            top: 30,
-            child: Column(
-              children: [
-                // أيقونة الدماغ
-                const Text('🧠', style: TextStyle(fontSize: 36)),
-                const SizedBox(height: 6),
-                // كلمة منو
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [Color(0xFFD4A843), Color(0xFFF5DFA0), Color(0xFFD4A843)],
-                  ).createShader(bounds),
-                  child: const Text(
-                    'منو',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                ),
-                // كلمة أذكى
-                ShaderMask(
-                  shaderCallback: (bounds) => const LinearGradient(
-                    colors: [
-                      Color(0xFF7A5200),
-                      Color(0xFFD4A843),
-                      Color(0xFFF5DFA0),
-                      Color(0xFFFFD700),
-                      Color(0xFFD4A843),
-                      Color(0xFF7A5200),
-                    ],
-                  ).createShader(bounds),
-                  child: const Text(
-                    'أذكى؟',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 38,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-                // سطر صغير
-                const Text(
-                  'مسابقات وتحديات ذكية',
-                  style: TextStyle(
-                    color: Color(0xFF8BA0C8),
-                    fontSize: 10,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            '🔊 اضغط على الفيديو لتشغيل الصوت',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              color: _goldText.withOpacity(0.6),
+              fontSize: 10,
+              letterSpacing: 1,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -331,80 +206,119 @@ class _LogoWidget extends StatelessWidget {
   }
 }
 
-class _IslamicFramePainter extends CustomPainter {
-  final double glow;
-  _IslamicFramePainter(this.glow);
+// ==============================
+// بطاقة Luxury
+// ==============================
+class _LuxuryCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets? padding;
+
+  const _LuxuryCard({required this.child, this.padding});
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-
-    final goldStroke = Paint()
-      ..shader = LinearGradient(
-        colors: const [
-          Color(0xFF7A5200),
-          Color(0xFFD4A843),
-          Color(0xFFF5DFA0),
-          Color(0xFFD4A843),
-          Color(0xFF7A5200),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final goldFill = Paint()
-      ..color = const Color(0xFFD4A843)
-      ..style = PaintingStyle.fill;
-
-    // قوس إسلامي في الأعلى
-    final archPath = Path()
-      ..moveTo(10, size.height - 10)
-      ..lineTo(10, size.height * 0.45)
-      ..quadraticBezierTo(10, size.height * 0.15, cx, 10)
-      ..quadraticBezierTo(size.width - 10, size.height * 0.15, size.width - 10, size.height * 0.45)
-      ..lineTo(size.width - 10, size.height - 10);
-    canvas.drawPath(archPath, goldStroke);
-
-    // قاعدة
-    canvas.drawLine(
-      Offset(0, size.height - 10),
-      Offset(size.width, size.height - 10),
-      goldStroke..strokeWidth = 2,
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _gold.withOpacity(0.35), width: 0.8),
+      ),
+      child: child,
     );
-    canvas.drawLine(
-      Offset(8, size.height - 4),
-      Offset(size.width - 8, size.height - 4),
-      Paint()
-        ..color = const Color(0xFFD4A843).withOpacity(0.4)
-        ..strokeWidth = 1,
-    );
-
-    // نقاط الزوايا
-    canvas.drawCircle(Offset(0, size.height - 10), 3, goldFill);
-    canvas.drawCircle(Offset(size.width, size.height - 10), 3, goldFill);
-
-    // نجمة في القمة
-    _drawStar(canvas, Offset(cx, 4), 7, goldFill..color = const Color(0xFFF5DFA0));
   }
+}
 
-  void _drawStar(Canvas canvas, Offset center, double r, Paint paint) {
-    final path = Path();
-    for (int i = 0; i < 10; i++) {
-      final angle = (i * 36 - 90) * (pi / 180);
-      final radius = i.isEven ? r : r * 0.4;
-      final x = center.dx + radius * cos(angle);
-      final y = center.dy + radius * sin(angle);
-      if (i == 0) path.moveTo(x, y);
-      else path.lineTo(x, y);
-    }
-    path.close();
-    canvas.drawPath(path, paint);
-  }
+// ==============================
+// زر أيقونة علوي
+// ==============================
+class _TopIconBtn extends StatelessWidget {
+  final Widget icon;
+  final VoidCallback onTap;
+
+  const _TopIconBtn({required this.icon, required this.onTap});
 
   @override
-  bool shouldRepaint(_IslamicFramePainter old) => old.glow != glow;
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: _gold.withOpacity(0.5), width: 0.8),
+        ),
+        child: Center(child: icon),
+      ),
+    );
+  }
+}
+
+// ==============================
+// زر ثانوي
+// ==============================
+class _SecondaryBtn extends StatefulWidget {
+  final Widget icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SecondaryBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_SecondaryBtn> createState() => _SecondaryBtnState();
+}
+
+class _SecondaryBtnState extends State<_SecondaryBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        transform: Matrix4.identity()..translate(0.0, _pressed ? 2.0 : 0.0),
+        decoration: BoxDecoration(
+          color: _pressed ? _gold.withOpacity(0.08) : _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _gold.withOpacity(_pressed ? 0.7 : 0.4),
+            width: 0.8,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            widget.icon,
+            const SizedBox(height: 6),
+            Text(
+              widget.label,
+              style: const TextStyle(
+                fontFamily: 'Tajawal',
+                color: _goldText,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ==============================
@@ -424,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _entranceController;
   late Animation<double> _entranceFade;
   late Animation<Offset> _entranceSlide;
-  int? _pressedButton;
+  bool _playPressed = false;
 
   final _random = Random(42);
   late final List<Offset> _stars;
@@ -434,13 +348,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _stars = List.generate(70, (_) => Offset(_random.nextDouble(), _random.nextDouble()));
-    _starSizes = List.generate(70, (_) => _random.nextDouble() * 2.2 + 0.4);
-    _twinkleOffsets = List.generate(70, (_) => _random.nextDouble() * 2 * pi);
+    _stars = List.generate(50, (_) => Offset(_random.nextDouble(), _random.nextDouble()));
+    _starSizes = List.generate(50, (_) => _random.nextDouble() * 1.5 + 0.3);
+    _twinkleOffsets = List.generate(50, (_) => _random.nextDouble() * 2 * pi);
 
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 3000),
     )..repeat(reverse: true);
     _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
@@ -448,18 +362,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
     _starsController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 6),
     )..repeat();
 
     _entranceController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
     );
     _entranceFade = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _entranceController, curve: Curves.easeOut),
     );
     _entranceSlide = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+      begin: const Offset(0, 0.08),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _entranceController, curve: Curves.easeOut));
     _entranceController.forward();
@@ -473,233 +387,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _buildPrimaryButton({
-    required String label,
-    required VoidCallback onTap,
-    required int index,
-  }) {
-    final isPressed = _pressedButton == index;
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressedButton = index),
-      onTapUp: (_) {
-        setState(() => _pressedButton = null);
-        onTap();
-      },
-      onTapCancel: () => setState(() => _pressedButton = null),
-      child: AnimatedBuilder(
-        animation: _glowAnimation,
-        builder: (_, __) => AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          width: double.infinity,
-          height: 58,
-          transform: Matrix4.identity()..translate(0.0, isPressed ? 3.0 : 0.0),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color(0xFF7A5200),
-                Color(0xFFD4A843),
-                Color(0xFFF5DFA0),
-                Color(0xFFFFEA80),
-                Color(0xFFF5DFA0),
-                Color(0xFFD4A843),
-                Color(0xFF7A5200),
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(40),
-            boxShadow: isPressed
-                ? []
-                : [
-              BoxShadow(
-                color: const Color(0xFFD4A843).withOpacity(0.7 * _glowAnimation.value),
-                blurRadius: 35,
-                spreadRadius: 5,
-              ),
-              BoxShadow(
-                color: const Color(0xFFF0C855).withOpacity(0.3),
-                blurRadius: 60,
-                spreadRadius: 10,
-              ),
-            ],
-          ),
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('▶', style: TextStyle(fontSize: 18, color: Color(0xFF3A2800))),
-                const SizedBox(width: 10),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2A1A00),
-                    letterSpacing: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNeonButton({
-    required String emoji,
-    required String label,
-    required VoidCallback onTap,
-    required int index,
-    required Color color,
-  }) {
-    final isPressed = _pressedButton == index;
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressedButton = index),
-      onTapUp: (_) {
-        setState(() => _pressedButton = null);
-        onTap();
-      },
-      onTapCancel: () => setState(() => _pressedButton = null),
-      child: AnimatedBuilder(
-        animation: _glowAnimation,
-        builder: (_, __) => AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          width: double.infinity,
-          height: 52,
-          transform: Matrix4.identity()..translate(0.0, isPressed ? 2.0 : 0.0),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.07),
-            borderRadius: BorderRadius.circular(36),
-            border: Border.all(
-              color: color.withOpacity(0.55 + 0.35 * _glowAnimation.value),
-              width: 1.8,
-            ),
-            boxShadow: isPressed
-                ? []
-                : [
-              BoxShadow(
-                color: color.withOpacity(0.3 * _glowAnimation.value),
-                blurRadius: 20,
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(emoji, style: const TextStyle(fontSize: 20)),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDepthCard({required Widget child}) {
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (_, __) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF0A1628).withOpacity(0.85),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFF00D4FF).withOpacity(0.18 + 0.1 * _glowAnimation.value),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF1A8FE3).withOpacity(0.1 * _glowAnimation.value),
-              blurRadius: 20,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: child,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _bg,
       body: Stack(
         children: [
 
-          // خلفية
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF050F2E),
-                    Color(0xFF081428),
-                    Color(0xFF040D20),
-                    Color(0xFF020810),
-                  ],
-                  stops: [0.0, 0.35, 0.65, 1.0],
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            top: -100,
-            left: -80,
-            child: AnimatedBuilder(
-              animation: _glowAnimation,
-              builder: (_, __) => Container(
-                width: 350,
-                height: 350,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF1565C0).withOpacity(0.15 * _glowAnimation.value),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          Positioned(
-            bottom: -120,
-            right: -80,
-            child: AnimatedBuilder(
-              animation: _glowAnimation,
-              builder: (_, __) => Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFF0D47A1).withOpacity(0.12 * _glowAnimation.value),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // نجوم
+          // نجوم خفيفة
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _starsController,
@@ -714,6 +409,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
 
+          // توهج ذهبي خفيف في المنتصف
+          Positioned(
+            top: 80,
+            left: 0,
+            right: 0,
+            child: AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (_, __) => Container(
+                height: 300,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      _gold.withOpacity(0.04 * _glowAnimation.value),
+                      Colors.transparent,
+                    ],
+                    radius: 0.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // المحتوى
           SafeArea(
             child: FadeTransition(
@@ -721,134 +438,148 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: SlideTransition(
                 position: _entranceSlide,
                 child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
 
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
 
+                        // شريط علوي
                         Row(
                           children: [
-                            _buildIconBtn(
-                              icon: Icons.leaderboard_rounded,
-                              color: const Color(0xFFD4A843),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
-                              ),
+                            _TopIconBtn(
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const LeaderboardScreen())),
+                              icon: _LeaderboardIcon(),
                             ),
                             const Spacer(),
-                            _buildIconBtn(
-                              icon: Icons.person_outline_rounded,
-                              color: const Color(0xFF00D4FF),
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                              ),
+                            _TopIconBtn(
+                              onTap: () => Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const ProfileScreen())),
+                              icon: _ProfileIcon(),
                             ),
                           ],
                         ),
 
+                        const SizedBox(height: 28),
+
+                        // ===== اللوغو =====
+                        _buildLogo(),
+
+                        const SizedBox(height: 32),
+
+                        // ===== زر ابدأ اللعب =====
+                        GestureDetector(
+                          onTapDown: (_) => setState(() => _playPressed = true),
+                          onTapUp: (_) {
+                            setState(() => _playPressed = false);
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (_) => const DraftScreen()));
+                          },
+                          onTapCancel: () => setState(() => _playPressed = false),
+                          child: AnimatedBuilder(
+                            animation: _glowAnimation,
+                            builder: (_, __) => AnimatedContainer(
+                              duration: const Duration(milliseconds: 100),
+                              width: double.infinity,
+                              height: 58,
+                              transform: Matrix4.identity()
+                                ..translate(0.0, _playPressed ? 3.0 : 0.0),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF3D2800),
+                                    Color(0xFFB8890A),
+                                    Color(0xFFE8C840),
+                                    Color(0xFFF0D060),
+                                    Color(0xFFE8C840),
+                                    Color(0xFFB8890A),
+                                    Color(0xFF3D2800),
+                                  ],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(29),
+                                boxShadow: _playPressed
+                                    ? []
+                                    : [
+                                  BoxShadow(
+                                    color: _gold.withOpacity(0.4 * _glowAnimation.value),
+                                    blurRadius: 30,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF1A0E00).withOpacity(0.3),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.play_arrow_rounded,
+                                      color: Color(0xFF1A0E00),
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  const Text(
+                                    'ابدأ اللعب',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1A0E00),
+                                      letterSpacing: 3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
                         const SizedBox(height: 16),
 
-                        // البطاقة الزجاجية
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.fromLTRB(24, 28, 24, 28),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0D1E3D).withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(
-                              color: const Color(0xFF00D4FF).withOpacity(0.25),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF1565C0).withOpacity(0.3),
-                                blurRadius: 40,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: Column(
+                        // ===== شبكة الأزرار =====
+                        SizedBox(
+                          height: 140,
+                          child: GridView.count(
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 2.8,
                             children: [
-
-                              // اللوغو
-                              AnimatedBuilder(
-                                animation: _glowAnimation,
-                                builder: (_, __) => _LogoWidget(glowValue: _glowAnimation.value),
-                              ),
-
-                              const SizedBox(height: 8),
-
-                              // سطر تحت اللوغو
-                              Text(
-                                'تحدى أصحابك الآن!',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: const Color(0xFF00D4FF).withOpacity(0.9),
-                                  letterSpacing: 1.5,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-
-                              const SizedBox(height: 28),
-
-                              _buildPrimaryButton(
-                                label: 'ابدأ اللعب',
-                                index: 0,
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const DraftScreen()),
-                                ),
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              _buildNeonButton(
-                                emoji: '🏆',
+                              _SecondaryBtn(
+                                icon: _TrophyIcon(),
                                 label: 'التحدي الأسبوعي',
-                                index: 1,
-                                color: const Color(0xFF00D4FF),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen()),
-                                ),
+                                onTap: () => Navigator.push(context,
+                                    MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen())),
                               ),
-                              const SizedBox(height: 10),
-                              _buildNeonButton(
-                                emoji: '✍️',
-                                label: 'أضف سؤالك',
-                                index: 2,
-                                color: const Color(0xFF00E676),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const UserQuestionsScreen()),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              _buildNeonButton(
-                                emoji: '🗂️',
+                              _SecondaryBtn(
+                                icon: _FolderIcon(),
                                 label: 'فئتك الخاصة',
-                                index: 3,
-                                color: const Color(0xFFD4A843),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const CustomCategoriesScreen()),
-                                ),
+                                onTap: () => Navigator.push(context,
+                                    MaterialPageRoute(builder: (_) => const CustomCategoriesScreen())),
                               ),
-                              const SizedBox(height: 10),
-                              _buildNeonButton(
-                                emoji: '💬',
+                              _SecondaryBtn(
+                                icon: _PenIcon(),
+                                label: 'أضف سؤالك',
+                                onTap: () => Navigator.push(context,
+                                    MaterialPageRoute(builder: (_) => const UserQuestionsScreen())),
+                              ),
+                              _SecondaryBtn(
+                                icon: _ChatIcon(),
                                 label: 'اقتراحاتك تهمنا',
-                                index: 4,
-                                color: const Color(0xFF7C4DFF),
-                                onTap: () => Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const SuggestionsScreen()),
-                                ),
+                                onTap: () => Navigator.push(context,
+                                    MaterialPageRoute(builder: (_) => const SuggestionsScreen())),
                               ),
                             ],
                           ),
@@ -856,74 +587,73 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                         const SizedBox(height: 20),
 
-                        // فيديو تعريفي
+                        // ===== فيديو =====
                         const _VideoCard(),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
-                        // بطاقة التحدي
+                        // ===== التحدي الأسبوعي =====
                         const _WeeklyChallengeCard(),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
-                        // كل يوم معلومة
-                        _buildDepthCard(
-                          child: Column(
+                        // ===== كل يوم معلومة =====
+                        _LuxuryCard(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD4A843).withOpacity(0.15),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFD4A843), width: 1),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
+                              _BulbIcon(),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('💡', style: TextStyle(fontSize: 14)),
-                                    SizedBox(width: 6),
                                     Text(
                                       'كل يوم معلومة',
                                       style: TextStyle(
-                                        color: Color(0xFFD4A843),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Tajawal',
+                                        color: _gold.withOpacity(0.7),
+                                        fontSize: 11,
+                                        letterSpacing: 2,
                                       ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      _getDailyFact(),
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        color: _goldText,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.6,
+                                      ),
+                                      textAlign: TextAlign.right,
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(height: 12),
-                              Text(
-                                _getDailyFact(),
-                                style: const TextStyle(
-                                  color: Color(0xFFF0F4FF),
-                                  fontSize: 15,
-                                  height: 1.6,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
-                        _buildDepthCard(
-                          child: const Text(
-                            'استمتعوا بأوقاتكم مع لعبة " منو أذكى "\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
+                        // ===== تذييل =====
+                        _LuxuryCard(
+                          child: Text(
+                            'استمتعوا بأوقاتكم مع لعبة منو أذكى\nلعبة المعلومات والتحدي اللي تجمع الأهل والأصدقاء',
                             style: TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF8BA0C8),
+                              fontFamily: 'Tajawal',
+                              fontSize: 12,
+                              color: _goldText.withOpacity(0.6),
                               height: 1.8,
+                              letterSpacing: 0.5,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -936,37 +666,519 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildIconBtn({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedBuilder(
-        animation: _glowAnimation,
-        builder: (_, __) => Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A1628).withOpacity(0.8),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: color.withOpacity(0.4 + 0.2 * _glowAnimation.value),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.2 * _glowAnimation.value),
-                blurRadius: 12,
+  Widget _buildLogo() {
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (_, __) => Column(
+        children: [
+          // خط زخرفي علوي
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  height: 0.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.transparent, _gold.withOpacity(0.4)],
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: _StarIcon(),
+              ),
+              Expanded(
+                child: Container(
+                  height: 0.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [_gold.withOpacity(0.4), Colors.transparent],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
+
+          const SizedBox(height: 16),
+
+          // منو
+          Text(
+            'منو',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 26,
+              fontWeight: FontWeight.w300,
+              color: _gold.withOpacity(0.85),
+              letterSpacing: 14,
+              shadows: [
+                Shadow(
+                  color: _gold.withOpacity(0.3 * _glowAnimation.value),
+                  blurRadius: 20,
+                ),
+              ],
+            ),
+          ),
+
+          // أذكى
+          ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_goldLight, _gold, _goldDark],
+            ).createShader(bounds),
+            child: Text(
+              'أذكى؟',
+              style: TextStyle(
+                fontFamily: 'Tajawal',
+                fontSize: 72,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 4,
+                shadows: [
+                  Shadow(
+                    color: _gold.withOpacity(0.5 * _glowAnimation.value),
+                    blurRadius: 40,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+
+          // خط فاصل
+          Container(
+            width: 200,
+            height: 0.4,
+            color: _gold.withOpacity(0.2),
+          ),
+
+          const SizedBox(height: 8),
+
+          // وصف
+          Text(
+            'مسابقات وتحديات ذكية',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 11,
+              color: _goldText.withOpacity(0.8),
+              letterSpacing: 5,
+              fontWeight: FontWeight.w300,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+// ==============================
+// أيقونات SVG مخصصة
+// ==============================
+
+class _LeaderboardIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _LeaderboardPainter()),
+    );
+  }
+}
+
+class _LeaderboardPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.fill;
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawRect(Rect.fromLTWH(0, size.height * 0.55, size.width * 0.28, size.height * 0.45), p..color = _gold.withOpacity(0.5));
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.36, size.height * 0.3, size.width * 0.28, size.height * 0.7), p..color = _gold.withOpacity(0.75));
+    canvas.drawRect(Rect.fromLTWH(size.width * 0.72, size.height * 0.05, size.width * 0.28, size.height * 0.95), p..color = _gold);
+
+    canvas.drawLine(Offset(0, size.height), Offset(size.width, size.height), stroke..color = _gold.withOpacity(0.6));
+
+    final starPath = Path();
+    final sc = Offset(size.width * 0.86, size.height * 0.0);
+    final r = size.width * 0.09;
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * 36 - 90) * (pi / 180);
+      final radius = i.isEven ? r : r * 0.45;
+      final x = sc.dx + radius * cos(angle);
+      final y = sc.dy + radius * sin(angle);
+      if (i == 0) starPath.moveTo(x, y); else starPath.lineTo(x, y);
+    }
+    starPath.close();
+    canvas.drawPath(starPath, p..color = _goldLight);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ProfileIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _ProfilePainter()),
+    );
+  }
+}
+
+class _ProfilePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(Offset(size.width / 2, size.height * 0.35), size.width * 0.22, stroke);
+
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..quadraticBezierTo(0, size.height * 0.65, size.width / 2, size.height * 0.65)
+      ..quadraticBezierTo(size.width, size.height * 0.65, size.width, size.height);
+    canvas.drawPath(path, stroke);
+
+    final crownPath = Path()
+      ..moveTo(size.width * 0.28, size.height * 0.12)
+      ..lineTo(size.width * 0.36, size.height * 0.04)
+      ..lineTo(size.width * 0.5, size.height * 0.12)
+      ..lineTo(size.width * 0.64, size.height * 0.04)
+      ..lineTo(size.width * 0.72, size.height * 0.12);
+    canvas.drawPath(crownPath, stroke..color = _gold.withOpacity(0.6)..strokeWidth = 1.0);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _TrophyIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _TrophyPainter()),
+    );
+  }
+}
+
+class _TrophyPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final body = Path()
+      ..moveTo(size.width * 0.2, 0)
+      ..lineTo(size.width * 0.2, size.height * 0.55)
+      ..quadraticBezierTo(size.width * 0.2, size.height * 0.75, size.width * 0.5, size.height * 0.75)
+      ..quadraticBezierTo(size.width * 0.8, size.height * 0.75, size.width * 0.8, size.height * 0.55)
+      ..lineTo(size.width * 0.8, 0)
+      ..close();
+    canvas.drawPath(body, stroke);
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * 0.2, size.height * 0.2)
+        ..quadraticBezierTo(0, size.height * 0.2, 0, size.height * 0.45)
+        ..quadraticBezierTo(0, size.height * 0.65, size.width * 0.2, size.height * 0.65),
+      stroke,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * 0.8, size.height * 0.2)
+        ..quadraticBezierTo(size.width, size.height * 0.2, size.width, size.height * 0.45)
+        ..quadraticBezierTo(size.width, size.height * 0.65, size.width * 0.8, size.height * 0.65),
+      stroke,
+    );
+
+    canvas.drawLine(Offset(size.width * 0.5, size.height * 0.75), Offset(size.width * 0.5, size.height * 0.88), stroke);
+    canvas.drawLine(Offset(size.width * 0.3, size.height * 0.88), Offset(size.width * 0.7, size.height * 0.88), stroke..strokeWidth = 1.5);
+
+    final starPath = Path();
+    final sc = Offset(size.width * 0.5, size.height * 0.38);
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * 36 - 90) * (pi / 180);
+      final r = i.isEven ? size.width * 0.14 : size.width * 0.06;
+      final x = sc.dx + r * cos(angle);
+      final y = sc.dy + r * sin(angle);
+      if (i == 0) starPath.moveTo(x, y); else starPath.lineTo(x, y);
+    }
+    starPath.close();
+    canvas.drawPath(starPath, Paint()..color = _goldLight..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FolderIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _FolderPainter()),
+    );
+  }
+}
+
+class _FolderPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final folder = Path()
+      ..moveTo(0, size.height * 0.3)
+      ..lineTo(0, size.height * 0.9)
+      ..quadraticBezierTo(0, size.height, size.width * 0.08, size.height)
+      ..lineTo(size.width * 0.92, size.height)
+      ..quadraticBezierTo(size.width, size.height, size.width, size.height * 0.9)
+      ..lineTo(size.width, size.height * 0.38)
+      ..quadraticBezierTo(size.width, size.height * 0.28, size.width * 0.92, size.height * 0.28)
+      ..lineTo(size.width * 0.48, size.height * 0.28)
+      ..quadraticBezierTo(size.width * 0.4, size.height * 0.28, size.width * 0.36, size.height * 0.2)
+      ..lineTo(size.width * 0.2, size.height * 0.2)
+      ..quadraticBezierTo(0, size.height * 0.2, 0, size.height * 0.3)
+      ..close();
+    canvas.drawPath(folder, stroke);
+
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.58),
+      Offset(size.width * 0.8, size.height * 0.58),
+      stroke..color = _gold.withOpacity(0.5)..strokeWidth = 1,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.72),
+      Offset(size.width * 0.65, size.height * 0.72),
+      stroke..color = _gold.withOpacity(0.5)..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PenIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _PenPainter()),
+    );
+  }
+}
+
+class _PenPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final pen = Path()
+      ..moveTo(size.width * 0.15, size.height * 0.75)
+      ..lineTo(size.width * 0.55, size.height * 0.35)
+      ..quadraticBezierTo(size.width * 0.7, size.height * 0.2, size.width * 0.82, size.height * 0.18)
+      ..quadraticBezierTo(size.width * 0.95, size.height * 0.05, size.width * 0.92, size.height * 0.18)
+      ..quadraticBezierTo(size.width * 0.9, size.height * 0.35, size.width * 0.65, size.height * 0.45)
+      ..lineTo(size.width * 0.25, size.height * 0.85)
+      ..close();
+    canvas.drawPath(pen, stroke);
+
+    canvas.drawLine(
+      Offset(size.width * 0.15, size.height * 0.75),
+      Offset(size.width * 0.08, size.height * 0.95),
+      stroke,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.08, size.height * 0.95),
+      Offset(size.width * 0.28, size.height * 0.88),
+      stroke,
+    );
+
+    canvas.drawLine(
+      Offset(size.width * 0.5, size.height * 0.38),
+      Offset(size.width * 0.62, size.height * 0.5),
+      stroke..color = _gold.withOpacity(0.5)..strokeWidth = 1,
+    );
+
+    canvas.drawLine(
+      Offset(size.width * 0.78, size.height * 0.1),
+      Offset(size.width * 0.9, size.height * 0.1),
+      stroke..color = _gold..strokeWidth = 1.5,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.84, size.height * 0.04),
+      Offset(size.width * 0.84, size.height * 0.16),
+      stroke..color = _gold..strokeWidth = 1.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ChatIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: CustomPaint(painter: _ChatPainter()),
+    );
+  }
+}
+
+class _ChatPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final bubble = Path()
+      ..moveTo(size.width * 0.12, 0)
+      ..lineTo(size.width * 0.88, 0)
+      ..quadraticBezierTo(size.width, 0, size.width, size.height * 0.12)
+      ..lineTo(size.width, size.height * 0.62)
+      ..quadraticBezierTo(size.width, size.height * 0.74, size.width * 0.88, size.height * 0.74)
+      ..lineTo(size.width * 0.45, size.height * 0.74)
+      ..lineTo(size.width * 0.28, size.height * 0.95)
+      ..lineTo(size.width * 0.28, size.height * 0.74)
+      ..lineTo(size.width * 0.12, size.height * 0.74)
+      ..quadraticBezierTo(0, size.height * 0.74, 0, size.height * 0.62)
+      ..lineTo(0, size.height * 0.12)
+      ..quadraticBezierTo(0, 0, size.width * 0.12, 0)
+      ..close();
+    canvas.drawPath(bubble, stroke);
+
+    final heartPath = Path();
+    final hc = Offset(size.width * 0.5, size.height * 0.35);
+    heartPath.moveTo(hc.dx, hc.dy + size.height * 0.12);
+    heartPath.cubicTo(
+      hc.dx, hc.dy, hc.dx - size.width * 0.18, hc.dy, hc.dx - size.width * 0.18, hc.dy - size.height * 0.06,
+    );
+    heartPath.cubicTo(
+      hc.dx - size.width * 0.18, hc.dy - size.height * 0.15, hc.dx, hc.dy - size.height * 0.12, hc.dx, hc.dy,
+    );
+    heartPath.cubicTo(
+      hc.dx, hc.dy - size.height * 0.12, hc.dx + size.width * 0.18, hc.dy - size.height * 0.15, hc.dx + size.width * 0.18, hc.dy - size.height * 0.06,
+    );
+    heartPath.cubicTo(
+      hc.dx + size.width * 0.18, hc.dy, hc.dx, hc.dy, hc.dx, hc.dy + size.height * 0.12,
+    );
+    canvas.drawPath(heartPath, Paint()..color = _gold..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BulbIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _BulbPainter()),
+    );
+  }
+}
+
+class _BulbPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = _gold
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(Offset(size.width / 2, size.height * 0.4), size.width * 0.28, stroke);
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width * 0.35, size.height * 0.65)
+        ..quadraticBezierTo(size.width * 0.35, size.height * 0.75, size.width * 0.5, size.height * 0.75)
+        ..quadraticBezierTo(size.width * 0.65, size.height * 0.75, size.width * 0.65, size.height * 0.65),
+      stroke,
+    );
+    canvas.drawLine(Offset(size.width * 0.38, size.height * 0.78), Offset(size.width * 0.62, size.height * 0.78), stroke);
+    canvas.drawLine(Offset(size.width * 0.42, size.height * 0.82), Offset(size.width * 0.58, size.height * 0.82), stroke);
+
+    for (final angle in [270.0, 225.0, 315.0, 180.0, 0.0]) {
+      final rad = angle * pi / 180;
+      final inner = Offset(size.width / 2 + cos(rad) * size.width * 0.32, size.height * 0.4 + sin(rad) * size.width * 0.32);
+      final outer = Offset(size.width / 2 + cos(rad) * size.width * 0.44, size.height * 0.4 + sin(rad) * size.width * 0.44);
+      canvas.drawLine(inner, outer, stroke..color = _gold.withOpacity(0.5)..strokeWidth = 1);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _StarIcon extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 12,
+      height: 12,
+      child: CustomPaint(painter: _StarPainter()),
+    );
+  }
+}
+
+class _StarPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path();
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    for (int i = 0; i < 10; i++) {
+      final angle = (i * 36 - 90) * (pi / 180);
+      final r = i.isEven ? size.width / 2 : size.width / 4;
+      final x = cx + r * cos(angle);
+      final y = cy + r * sin(angle);
+      if (i == 0) path.moveTo(x, y); else path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, Paint()..color = _gold.withOpacity(0.7)..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ==============================
@@ -991,7 +1203,7 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
     super.initState();
     _shimmerController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
     _shimmerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
@@ -1034,76 +1246,57 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
         .inDays;
 
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen()),
-      ),
+      onTap: () => Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const WeeklyChallengeScreen())),
       child: AnimatedBuilder(
         animation: _shimmerAnimation,
-        builder: (_, __) => Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0A1628).withOpacity(0.85),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: const Color(0xFF00D4FF)
-                  .withOpacity(0.25 + 0.25 * _shimmerAnimation.value),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF00D4FF)
-                    .withOpacity(0.1 * _shimmerAnimation.value),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
+        builder: (_, __) => _LuxuryCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Text(_challenge!['badge'], style: const TextStyle(fontSize: 28)),
-                  const SizedBox(width: 12),
+                  _TrophyIcon(),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'التحدي الأسبوعي',
                           style: TextStyle(
-                            color: Color(0xFF00D4FF),
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Tajawal',
+                            color: _gold.withOpacity(0.6),
+                            fontSize: 11,
+                            letterSpacing: 2,
                           ),
                         ),
                         Text(
                           _challenge!['title'],
                           style: const TextStyle(
-                            color: Color(0xFFF0F4FF),
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Tajawal',
+                            color: _goldText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF4757).withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: const Color(0xFFFF4757).withOpacity(0.3)),
+                      color: _gold.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: _gold.withOpacity(0.3)),
                     ),
                     child: Text(
                       '$daysLeft يوم',
                       style: const TextStyle(
-                        color: Color(0xFFFF4757),
+                        fontFamily: 'Tajawal',
+                        color: _gold,
                         fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -1111,12 +1304,12 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
               ),
               const SizedBox(height: 12),
               ClipRRect(
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(4),
                 child: LinearProgressIndicator(
                   value: percent,
-                  backgroundColor: const Color(0xFF0F1E35),
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFF00D4FF)),
-                  minHeight: 8,
+                  backgroundColor: _gold.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation(_gold.withOpacity(0.7)),
+                  minHeight: 3,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1125,14 +1318,19 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
                 children: [
                   Text(
                     '$progress / $target جولة',
-                    style: const TextStyle(color: Color(0xFF8BA0C8), fontSize: 11),
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      color: _goldText.withOpacity(0.6),
+                      fontSize: 11,
+                    ),
                   ),
                   Text(
                     '${(percent * 100).toInt()}%',
-                    style: const TextStyle(
-                      color: Color(0xFF00D4FF),
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      color: _gold.withOpacity(0.7),
                       fontSize: 11,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
