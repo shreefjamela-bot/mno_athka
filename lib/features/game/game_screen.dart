@@ -1,6 +1,5 @@
 // ==============================
-// شاشة اللعبة — Open Question System
-// اسم الملف: game_screen.dart
+// شاشة اللعبة — Luxury Theme
 // ==============================
 
 import 'dart:async';
@@ -12,10 +11,17 @@ import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../core/constants/app_colors.dart';
 import '../../data/models/question_model.dart';
 import '../../data/models/category_model.dart';
 import '../../data/repositories/supabase_repository.dart';
+
+const _gold = Color(0xFFC49830);
+const _goldLight = Color(0xFFF0D060);
+const _bg = Color(0xFF080808);
+const _cardBg = Color(0xFF0E0E0E);
+const _goldText = Color(0xFF5A4820);
+const _team1Color = Color(0xFF2D7A5F);
+const _team2Color = Color(0xFF8B2635);
 
 class GameScreen extends StatefulWidget {
   final int level;
@@ -57,9 +63,7 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen>
-    with TickerProviderStateMixin {
-
+class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   List<QuestionModel> _questions = [];
   List<QuestionModel> _allQuestions = [];
   int _currentIndex = 0;
@@ -71,7 +75,6 @@ class _GameScreenState extends State<GameScreen>
   bool _timesUp = false;
   bool _showAnswer = false;
   String? _selectedTeam;
-  bool _doubleQuestionAnswered = false;
 
   late bool _team1CallUsed;
   late bool _team1RevealUsed;
@@ -95,6 +98,8 @@ class _GameScreenState extends State<GameScreen>
   late AnimationController _pointsController;
   late Animation<double> _pointsFade;
   late Animation<double> _pointsScale;
+  late AnimationController _timerController;
+  late Animation<double> _timerGlow;
 
   @override
   void initState() {
@@ -113,32 +118,17 @@ class _GameScreenState extends State<GameScreen>
   }
 
   void _initAnimations() {
-    _questionController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _questionFade = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(
-          parent: _questionController, curve: Curves.easeOut),
-    );
-    _questionSlide = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-        parent: _questionController, curve: Curves.easeOut));
+    _questionController = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _questionFade = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _questionController, curve: Curves.easeOut));
+    _questionSlide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _questionController, curve: Curves.easeOut));
 
-    _pointsController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _pointsFade = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(
-          parent: _pointsController, curve: Curves.easeOut),
-    );
-    _pointsScale = Tween<double>(begin: 1, end: 1.8).animate(
-      CurvedAnimation(
-          parent: _pointsController, curve: Curves.easeOut),
-    );
+    _pointsController = AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+    _pointsFade = Tween<double>(begin: 1, end: 0).animate(CurvedAnimation(parent: _pointsController, curve: Curves.easeOut));
+    _pointsScale = Tween<double>(begin: 1, end: 2).animate(CurvedAnimation(parent: _pointsController, curve: Curves.easeOut));
+
+    _timerController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
+    _timerGlow = Tween<double>(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: _timerController, curve: Curves.easeInOut));
   }
 
   @override
@@ -147,29 +137,25 @@ class _GameScreenState extends State<GameScreen>
     _audioPlayer.dispose();
     _questionController.dispose();
     _pointsController.dispose();
+    _timerController.dispose();
     super.dispose();
   }
 
   void _registerVideo(String url) {
     _videoCounter++;
     _videoViewId = _videoCounter;
-    final viewType = 'game-video-$_videoViewId';
-    ui.platformViewRegistry.registerViewFactory(
-      viewType,
-          (int id) {
-        final video = html.VideoElement()
-          ..src = url
-          ..autoplay = true
-          ..loop = true
-          ..muted = true
-          ..controls = true
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.objectFit = 'cover'
-          ..style.borderRadius = '16px';
-        return video;
-      },
-    );
+    ui.platformViewRegistry.registerViewFactory('game-video-$_videoViewId', (int id) {
+      return html.VideoElement()
+        ..src = url
+        ..autoplay = true
+        ..loop = true
+        ..muted = true
+        ..controls = true
+        ..style.width = '100%'
+        ..style.height = '100%'
+        ..style.objectFit = 'cover'
+        ..style.borderRadius = '14px';
+    });
     setState(() => _currentVideoUrl = url);
   }
 
@@ -178,27 +164,18 @@ class _GameScreenState extends State<GameScreen>
       categoryId: widget.category?.id ?? 'general',
       level: widget.level,
     );
-
     setState(() {
       _allQuestions = allQuestions;
-      if (allQuestions.isEmpty) {
-        _questions = [];
-      } else {
-        final random = Random();
-        final picked =
-        allQuestions[random.nextInt(allQuestions.length)];
-        _questions = [picked];
+      if (allQuestions.isNotEmpty) {
+        _questions = [allQuestions[Random().nextInt(allQuestions.length)]];
       }
       _isLoading = false;
     });
-
     if (_questions.isNotEmpty) {
       _questionController.forward();
       _startTimer();
       final videoUrl = _questions[_currentIndex].videoUrl;
-      if (videoUrl != null && videoUrl.isNotEmpty) {
-        _registerVideo(videoUrl);
-      }
+      if (videoUrl != null && videoUrl.isNotEmpty) _registerVideo(videoUrl);
     }
   }
 
@@ -211,70 +188,44 @@ class _GameScreenState extends State<GameScreen>
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        if (_timeLeft > 0) {
-          _timeLeft--;
-        } else {
-          _timer?.cancel();
-          _timesUp = true;
-          _showAnswer = true;
-        }
+        if (_timeLeft > 0) { _timeLeft--; }
+        else { _timer?.cancel(); _timesUp = true; _showAnswer = true; }
       });
     });
   }
 
   Future<void> _playApplause() async {
     try {
-      await _audioPlayer
-          .setSource(AssetSource('sounds/applause.wav'));
+      await _audioPlayer.setSource(AssetSource('sounds/applause.wav'));
       await _audioPlayer.resume();
-    } catch (e) {
-      debugPrint('Audio error: $e');
-    }
+    } catch (e) { debugPrint('Audio error: $e'); }
   }
 
   int get _effectivePoints {
     if (widget.bonusPoints > 0) return widget.bonusPoints;
-    return _questions.isNotEmpty
-        ? _questions[_currentIndex].points
-        : 0;
+    return _questions.isNotEmpty ? _questions[_currentIndex].points : 0;
   }
 
   void _selectWinner(String team) {
     if (_selectedTeam != null) return;
-    if (widget.isDoubleQuestion && !_doubleQuestionAnswered) {
-      _doubleQuestionAnswered = true;
-    }
     _timer?.cancel();
     setState(() {
       _selectedTeam = team;
       _showAnswer = true;
       _timesUp = true;
-      final points = _effectivePoints;
-      if (team == 'team1') {
-        _team1Points += points;
-        _pointsController.forward(from: 0);
-        _playApplause();
-      } else if (team == 'team2') {
-        _team2Points += points;
-        _pointsController.forward(from: 0);
-        _playApplause();
-      }
+      if (team == 'team1') { _team1Points += _effectivePoints; _pointsController.forward(from: 0); _playApplause(); }
+      else if (team == 'team2') { _team2Points += _effectivePoints; _pointsController.forward(from: 0); _playApplause(); }
     });
   }
 
   void _goToResult() {
     _timer?.cancel();
     Navigator.pop(context, {
-      'team1': _team1Points,
-      'team2': _team2Points,
-      'team1CallUsed': _team1CallUsed,
-      'team1RevealUsed': _team1RevealUsed,
-      'team1ExtendUsed': _team1ExtendUsed,
-      'team1AltUsed': _team1AltUsed,
-      'team2CallUsed': _team2CallUsed,
-      'team2RevealUsed': _team2RevealUsed,
-      'team2ExtendUsed': _team2ExtendUsed,
-      'team2AltUsed': _team2AltUsed,
+      'team1': _team1Points, 'team2': _team2Points,
+      'team1CallUsed': _team1CallUsed, 'team1RevealUsed': _team1RevealUsed,
+      'team1ExtendUsed': _team1ExtendUsed, 'team1AltUsed': _team1AltUsed,
+      'team2CallUsed': _team2CallUsed, 'team2RevealUsed': _team2RevealUsed,
+      'team2ExtendUsed': _team2ExtendUsed, 'team2AltUsed': _team2AltUsed,
     });
   }
 
@@ -282,171 +233,119 @@ class _GameScreenState extends State<GameScreen>
 
   Color get _timerColor {
     final ratio = _timeLeft / widget.timeLimit;
-    if (ratio > 0.5) return AppColors.correct;
-    if (ratio > 0.2) return AppColors.primary;
-    return AppColors.wrong;
+    if (ratio > 0.5) return _team1Color;
+    if (ratio > 0.2) return _gold;
+    return _team2Color;
   }
 
   void _resumeTimer() {
     if (_timesUp || _showAnswer || _selectedTeam != null) return;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
-        if (_timeLeft > 0) {
-          _timeLeft--;
-        } else {
-          _timer?.cancel();
-          _timesUp = true;
-          _showAnswer = true;
-        }
+        if (_timeLeft > 0) { _timeLeft--; }
+        else { _timer?.cancel(); _timesUp = true; _showAnswer = true; }
       });
     });
   }
 
-  // ── ويدجت الصورة (كاملة بدون قص) ────────────
+  // ===== ويدجت الصورة =====
   Widget _buildQuestionImage(String url) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: CachedNetworkImage(
         imageUrl: url,
         width: double.infinity,
         fit: BoxFit.contain,
-        placeholder: (_, __) => Container(
-          height: 200,
-          color: AppColors.surfaceColor,
-          child: const Center(
-            child: CircularProgressIndicator(
-                color: AppColors.primary, strokeWidth: 2),
-          ),
-        ),
-        errorWidget: (_, __, ___) => Container(
-          height: 200,
-          color: AppColors.surfaceColor,
-          child: const Center(
-            child: Icon(Icons.broken_image_outlined,
-                color: AppColors.textHint, size: 40),
-          ),
-        ),
+        placeholder: (_, __) => Container(height: 200, color: _cardBg,
+            child: const Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2))),
+        errorWidget: (_, __, ___) => Container(height: 200, color: _cardBg,
+            child: const Center(child: Icon(Icons.broken_image_outlined, color: _goldText, size: 40))),
       ),
     );
   }
 
-  // ── ويدجت الفيديو HTML ───────────────────────
   Widget _buildQuestionVideo() {
     if (_currentVideoUrl == null) {
-      return Container(
-        height: 200,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: CircularProgressIndicator(
-              color: AppColors.primary, strokeWidth: 2),
-        ),
-      );
+      return Container(height: 200, decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(14)),
+          child: const Center(child: CircularProgressIndicator(color: _gold, strokeWidth: 2)));
     }
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: SizedBox(
-        height: 200,
-        child:
-        HtmlElementView(viewType: 'game-video-$_videoViewId'),
-      ),
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(height: 200, child: HtmlElementView(viewType: 'game-video-$_videoViewId')),
     );
   }
 
-  // ── ويدجت صورة الإجابة (كاملة بدون قص) ──────
   Widget _buildAnswerImage(String url) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: CachedNetworkImage(
-        imageUrl: url,
-        width: double.infinity,
-        fit: BoxFit.contain,
-        placeholder: (_, __) => Container(
-          height: 160,
-          color: AppColors.surfaceColor,
-          child: const Center(
-            child: CircularProgressIndicator(
-                color: AppColors.correct, strokeWidth: 2),
-          ),
-        ),
+        imageUrl: url, width: double.infinity, fit: BoxFit.contain,
+        placeholder: (_, __) => Container(height: 160, color: _cardBg,
+            child: const Center(child: CircularProgressIndicator(color: _team1Color, strokeWidth: 2))),
         errorWidget: (_, __, ___) => const SizedBox(),
       ),
     );
   }
 
-  // ══════════════════════════════════════
-  // وسائل المساعدة
-  // ══════════════════════════════════════
+  // ===== وسائل المساعدة =====
+  Widget _luxuryLifelineDialog({
+    required String emoji,
+    required String title,
+    required Widget content,
+    required Color accent,
+    required String buttonText,
+    required VoidCallback onPressed,
+  }) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withOpacity(0.5), width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 44)),
+            const SizedBox(height: 12),
+            Text(title, style: TextStyle(fontFamily: 'Tajawal', color: accent, fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            content,
+            const SizedBox(height: 18),
+            GestureDetector(
+              onTap: onPressed,
+              child: Container(
+                width: double.infinity,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: accent.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: accent.withOpacity(0.5)),
+                ),
+                child: Center(child: Text(buttonText,
+                    style: TextStyle(fontFamily: 'Tajawal', color: accent, fontSize: 15, fontWeight: FontWeight.w700))),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _useCall(String team) {
     if (team == 'team1' && _team1CallUsed) return;
     if (team == 'team2' && _team2CallUsed) return;
-    setState(() {
-      if (team == 'team1') _team1CallUsed = true;
-      else _team2CallUsed = true;
-    });
+    setState(() { if (team == 'team1') _team1CallUsed = true; else _team2CallUsed = true; });
     _timer?.cancel();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(20),
-            border:
-            Border.all(color: AppColors.primary, width: 2),
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.glowGold, blurRadius: 20)
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('📞',
-                  style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              Text(
-                team == 'team1'
-                    ? widget.team1Name
-                    : widget.team2Name,
-                style: const TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'اختر شخصاً من الجمهور للمساعدة\nاستمع لرأيه ثم قرر',
-                style: TextStyle(
-                    color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (!_timesUp) _resumeTimer();
-                },
-                child: const Text('تم الاتصال ✓',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    showDialog(context: context, builder: (_) => _luxuryLifelineDialog(
+      emoji: '📞', title: 'اتصال بالجمهور', accent: _gold,
+      content: Text('اختر شخصاً من الجمهور للمساعدة\nاستمع لرأيه ثم قرر',
+          style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.7), fontSize: 13), textAlign: TextAlign.center),
+      buttonText: 'تم الاتصال ✓',
+      onPressed: () { Navigator.pop(context); if (!_timesUp) _resumeTimer(); },
+    ));
   }
 
   void _useReveal(String team) {
@@ -456,139 +355,39 @@ class _GameScreenState extends State<GameScreen>
     final answer = _questions[_currentIndex].answer ?? '';
     if (answer.isEmpty) return;
     setState(() {
-      if (team == 'team1') _team1RevealUsed = true;
-      else _team2RevealUsed = true;
-      final firstChar = answer.trimLeft()[0];
-      _revealedHint = 'أول حرف: $firstChar';
+      if (team == 'team1') _team1RevealUsed = true; else _team2RevealUsed = true;
+      _revealedHint = 'أول حرف: ${answer.trimLeft()[0]}';
     });
     _timer?.cancel();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: const Color(0xFF2D7A5F), width: 2),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🔍',
-                  style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              const Text('كشف الحرف',
-                  style: TextStyle(
-                      color: Color(0xFF2D7A5F),
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 32, vertical: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2D7A5F)
-                      .withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: const Color(0xFF2D7A5F),
-                      width: 2),
-                ),
-                child: Text(
-                  answer.trimLeft()[0],
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2D7A5F),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (!_timesUp) _resumeTimer();
-                },
-                child: const Text('فاهمين ✓',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
+    showDialog(context: context, builder: (_) => _luxuryLifelineDialog(
+      emoji: '🔍', title: 'كشف الحرف', accent: _team1Color,
+      content: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        decoration: BoxDecoration(color: _team1Color.withOpacity(0.1), borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _team1Color.withOpacity(0.5))),
+        child: Text(answer.trimLeft()[0],
+            style: const TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 52, fontWeight: FontWeight.w900)),
       ),
-    );
+      buttonText: 'فاهمين ✓',
+      onPressed: () { Navigator.pop(context); if (!_timesUp) _resumeTimer(); },
+    ));
   }
 
   void _useExtend(String team) {
     if (team == 'team1' && _team1ExtendUsed) return;
     if (team == 'team2' && _team2ExtendUsed) return;
     setState(() {
-      if (team == 'team1') _team1ExtendUsed = true;
-      else _team2ExtendUsed = true;
+      if (team == 'team1') _team1ExtendUsed = true; else _team2ExtendUsed = true;
       _timeLeft += 30;
     });
     _timer?.cancel();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: const Color(0xFFFFD700), width: 2),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('⏳',
-                  style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              const Text('تمديد الوقت!',
-                  style: TextStyle(
-                      color: Color(0xFFFFD700),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(
-                'أضفنا 30 ثانية\nالوقت الآن: $_timeLeft ث',
-                style: const TextStyle(
-                    color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFFD700),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (!_timesUp) _resumeTimer();
-                },
-                child: const Text('تمام ✓',
-                    style: TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    showDialog(context: context, builder: (_) => _luxuryLifelineDialog(
+      emoji: '⏳', title: 'تمديد الوقت!', accent: _gold,
+      content: Text('أضفنا 30 ثانية\nالوقت الآن: $_timeLeft ث',
+          style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.7), fontSize: 14), textAlign: TextAlign.center),
+      buttonText: 'تمام ✓',
+      onPressed: () { Navigator.pop(context); if (!_timesUp) _resumeTimer(); },
+    ));
   }
 
   void _useAlt(String team) {
@@ -596,127 +395,45 @@ class _GameScreenState extends State<GameScreen>
     if (team == 'team2' && _team2AltUsed) return;
     if (_allQuestions.length < 2) return;
     setState(() {
-      if (team == 'team1') _team1AltUsed = true;
-      else _team2AltUsed = true;
-      final current = _questions[_currentIndex];
-      final others = _allQuestions
-          .where((q) => q.id != current.id)
-          .toList();
+      if (team == 'team1') _team1AltUsed = true; else _team2AltUsed = true;
+      final others = _allQuestions.where((q) => q.id != _questions[_currentIndex].id).toList();
       if (others.isNotEmpty) {
-        final random = Random();
-        final newQ = others[random.nextInt(others.length)];
-        _questions = [newQ];
-        _currentIndex = 0;
-        _revealedHint = '';
-        _currentVideoUrl = null;
-        final videoUrl = newQ.videoUrl;
-        if (videoUrl != null && videoUrl.isNotEmpty) {
-          _registerVideo(videoUrl);
-        }
+        final newQ = others[Random().nextInt(others.length)];
+        _questions = [newQ]; _currentIndex = 0; _revealedHint = ''; _currentVideoUrl = null;
+        if (newQ.videoUrl != null && newQ.videoUrl!.isNotEmpty) _registerVideo(newQ.videoUrl!);
       }
     });
     _timer?.cancel();
     _questionController.reset();
     _questionController.forward();
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-                color: const Color(0xFF1A5F8A), width: 2),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🔀',
-                  style: TextStyle(fontSize: 48)),
-              const SizedBox(height: 12),
-              const Text('سؤال بديل!',
-                  style: TextStyle(
-                      color: Color(0xFF1A5F8A),
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                'تم استبدال السؤال بسؤال جديد\nمن نفس الفئة والمستوى',
-                style: TextStyle(
-                    color: Colors.white70, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1A5F8A),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  if (!_timesUp) _resumeTimer();
-                },
-                child: const Text('ابدأ السؤال الجديد ✓',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    showDialog(context: context, builder: (_) => _luxuryLifelineDialog(
+      emoji: '🔀', title: 'سؤال بديل!', accent: const Color(0xFF1A5F8A),
+      content: Text('تم استبدال السؤال بسؤال جديد\nمن نفس الفئة والمستوى',
+          style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.7), fontSize: 13), textAlign: TextAlign.center),
+      buttonText: 'ابدأ السؤال الجديد ✓',
+      onPressed: () { Navigator.pop(context); if (!_timesUp) _resumeTimer(); },
+    ));
   }
 
-  Widget _buildLifeline({
-    required String emoji,
-    required String label,
-    required bool used,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildLifeline({required String emoji, required String label, required bool used, required VoidCallback onTap}) {
     return AbsorbPointer(
       absorbing: used || _selectedTeam != null,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
           decoration: BoxDecoration(
-            color:
-            used ? Colors.white10 : AppColors.surfaceColor,
+            color: used ? _cardBg : _gold.withOpacity(0.08),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: used
-                  ? Colors.white12
-                  : AppColors.cardBorderGold,
-              width: 1,
-            ),
+            border: Border.all(color: used ? _gold.withOpacity(0.1) : _gold.withOpacity(0.4), width: 0.8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                used ? '✓' : emoji,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: used ? Colors.white24 : null,
-                ),
-              ),
+              Text(used ? '✓' : emoji, style: TextStyle(fontSize: 11, color: used ? _goldText.withOpacity(0.3) : null)),
               const SizedBox(width: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  color: used
-                      ? Colors.white24
-                      : AppColors.primary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              Text(label, style: TextStyle(fontFamily: 'Tajawal', color: used ? _goldText.withOpacity(0.2) : _gold, fontSize: 9, fontWeight: FontWeight.w600)),
             ],
           ),
         ),
@@ -728,917 +445,389 @@ class _GameScreenState extends State<GameScreen>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                  color: AppColors.primary, strokeWidth: 2),
-              SizedBox(height: 16),
-              Text('جاري تحميل الأسئلة...',
-                  style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 14)),
-            ],
-          ),
+        backgroundColor: _bg,
+        body: Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const CircularProgressIndicator(color: _gold, strokeWidth: 2),
+            const SizedBox(height: 16),
+            Text('جاري تحميل السؤال...', style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.7), fontSize: 14)),
+          ]),
         ),
       );
     }
 
     if (_questions.isEmpty) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: _bg,
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('😕',
-                  style: TextStyle(fontSize: 60)),
-              const SizedBox(height: 16),
-              const Text('ما في أسئلة لهذا المستوى',
-                  style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 18)),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, {
-                  'team1': _team1Points,
-                  'team2': _team2Points,
-                  'team1CallUsed': _team1CallUsed,
-                  'team1RevealUsed': _team1RevealUsed,
-                  'team1ExtendUsed': _team1ExtendUsed,
-                  'team1AltUsed': _team1AltUsed,
-                  'team2CallUsed': _team2CallUsed,
-                  'team2RevealUsed': _team2RevealUsed,
-                  'team2ExtendUsed': _team2ExtendUsed,
-                  'team2AltUsed': _team2AltUsed,
-                }),
-                child: const Text('ارجع'),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            const Text('😕', style: TextStyle(fontSize: 60)),
+            const SizedBox(height: 16),
+            const Text('ما في أسئلة لهذا المستوى', style: TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 18)),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTap: () => Navigator.pop(context, {'team1': 0, 'team2': 0,
+                'team1CallUsed': _team1CallUsed, 'team1RevealUsed': _team1RevealUsed,
+                'team1ExtendUsed': _team1ExtendUsed, 'team1AltUsed': _team1AltUsed,
+                'team2CallUsed': _team2CallUsed, 'team2RevealUsed': _team2RevealUsed,
+                'team2ExtendUsed': _team2ExtendUsed, 'team2AltUsed': _team2AltUsed}),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(20), border: Border.all(color: _gold.withOpacity(0.4))),
+                child: const Text('ارجع', style: TextStyle(fontFamily: 'Tajawal', color: _gold, fontSize: 16)),
               ),
-            ],
-          ),
+            ),
+          ]),
         ),
       );
     }
 
     final question = _questions[_currentIndex];
-    final size = MediaQuery.of(context).size;
-    final hasQuestionImage = question.imageUrl != null &&
-        question.imageUrl!.isNotEmpty;
-    final hasQuestionVideo = question.videoUrl != null &&
-        question.videoUrl!.isNotEmpty;
-    final hasAnswerImage = question.answerImageUrl != null &&
-        question.answerImageUrl!.isNotEmpty;
+    final hasQuestionImage = question.imageUrl != null && question.imageUrl!.isNotEmpty;
+    final hasQuestionVideo = question.videoUrl != null && question.videoUrl!.isNotEmpty;
+    final hasAnswerImage = question.answerImageUrl != null && question.answerImageUrl!.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _bg,
       body: SafeArea(
-        child: Stack(
-          children: [
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
 
-            ...List.generate(6, (i) {
-              final random = Random(i);
-              return Positioned(
-                top: random.nextDouble() * size.height,
-                left: random.nextDouble() * size.width,
-                child: Container(
-                  width: 4,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary.withOpacity(0.15),
+                // ===== هيدر =====
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: _showExitDialog,
+                      child: Container(
+                        width: 38, height: 38,
+                        decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: _gold.withOpacity(0.3))),
+                        child: Icon(Icons.close_rounded, color: _goldText.withOpacity(0.6), size: 18),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (widget.bonusPoints > 0)
+                      _labelChip('🌟 ${widget.bonusPoints} نقطة', const Color(0xFF9B59B6))
+                    else
+                      _labelChip(
+                        '${widget.category?.emoji ?? '🎯'} ${widget.category?.title ?? 'عامة'}',
+                        _gold,
+                      ),
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: widget.timeLimit <= 15 ? _team2Color.withOpacity(0.1) : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        widget.timeLimit <= 15 ? '⏱️ ${widget.timeLimit}ث'
+                            : 'سؤال ${widget.level == 1 ? "٢٠٠" : widget.level == 2 ? "٤٠٠" : "٦٠٠"}',
+                        style: TextStyle(fontFamily: 'Tajawal',
+                            color: widget.timeLimit <= 15 ? _team2Color : _goldText.withOpacity(0.6),
+                            fontSize: 12, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                // ===== نقاط الفريقين =====
+                Row(
+                  children: [
+                    Expanded(child: _teamCard('team1', widget.team1Name, _team1Points, _team1Color)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(colors: [_goldLight, _gold]).createShader(bounds),
+                        child: const Text('VS', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'Tajawal', letterSpacing: 2)),
+                      ),
+                    ),
+                    Expanded(child: _teamCard('team2', widget.team2Name, _team2Points, _team2Color)),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // ===== وسائل المساعدة =====
+                Row(
+                  children: [
+                    Expanded(
+                      child: Wrap(alignment: WrapAlignment.center, spacing: 3, runSpacing: 3, children: [
+                        _buildLifeline(emoji: '📞', label: 'اتصال', used: _team1CallUsed, onTap: () => _useCall('team1')),
+                        _buildLifeline(emoji: '🔍', label: 'حرف', used: _team1RevealUsed, onTap: () => _useReveal('team1')),
+                        _buildLifeline(emoji: '⏳', label: '+30ث', used: _team1ExtendUsed, onTap: () => _useExtend('team1')),
+                        _buildLifeline(emoji: '🔀', label: 'بديل', used: _team1AltUsed, onTap: () => _useAlt('team1')),
+                      ]),
+                    ),
+                    Container(width: 0.5, height: 28, color: _gold.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: 6)),
+                    Expanded(
+                      child: Wrap(alignment: WrapAlignment.center, spacing: 3, runSpacing: 3, children: [
+                        _buildLifeline(emoji: '📞', label: 'اتصال', used: _team2CallUsed, onTap: () => _useCall('team2')),
+                        _buildLifeline(emoji: '🔍', label: 'حرف', used: _team2RevealUsed, onTap: () => _useReveal('team2')),
+                        _buildLifeline(emoji: '⏳', label: '+30ث', used: _team2ExtendUsed, onTap: () => _useExtend('team2')),
+                        _buildLifeline(emoji: '🔀', label: 'بديل', used: _team2AltUsed, onTap: () => _useAlt('team2')),
+                      ]),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // ===== شريط الوقت =====
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('$_effectivePoints نقطة',
+                            style: const TextStyle(fontFamily: 'Tajawal', color: _gold, fontSize: 12, fontWeight: FontWeight.w700)),
+                        if (_revealedHint.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(color: _team1Color.withOpacity(0.1), borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _team1Color.withOpacity(0.4))),
+                            child: Text(_revealedHint, style: const TextStyle(fontFamily: 'Tajawal', color: _team1Color, fontSize: 11, fontWeight: FontWeight.w700)),
+                          ),
+                        AnimatedBuilder(
+                          animation: _timerGlow,
+                          builder: (_, __) => Row(
+                            children: [
+                              Icon(_timesUp ? Icons.timer_off_outlined : Icons.timer_outlined,
+                                  color: _timesUp ? _team2Color : _timerColor, size: 13),
+                              const SizedBox(width: 4),
+                              Text(_timesUp ? 'انتهى الوقت!' : '$_timeLeft ث',
+                                  style: TextStyle(fontFamily: 'Tajawal',
+                                      color: _timesUp ? _team2Color : _timerColor,
+                                      fontSize: 12, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: _timeProgress,
+                        backgroundColor: _gold.withOpacity(0.1),
+                        valueColor: AlwaysStoppedAnimation(_timesUp ? _team2Color : _timerColor),
+                        minHeight: 4,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // ===== صورة/فيديو السؤال =====
+                if (hasQuestionVideo) _buildQuestionVideo()
+                else if (hasQuestionImage) _buildQuestionImage(question.imageUrl!),
+
+                if (hasQuestionVideo || hasQuestionImage) const SizedBox(height: 12),
+
+                // ===== بطاقة السؤال =====
+                FadeTransition(
+                  opacity: _questionFade,
+                  child: SlideTransition(
+                    position: _questionSlide,
+                    child: Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 80),
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: widget.bonusPoints > 0
+                              ? const Color(0xFF9B59B6).withOpacity(0.6)
+                              : _timesUp ? _gold.withOpacity(0.6) : _gold.withOpacity(0.3),
+                          width: 0.8,
+                        ),
+                        boxShadow: [BoxShadow(color: _gold.withOpacity(_timesUp ? 0.1 : 0.05), blurRadius: 20)],
+                      ),
+                      child: Text(question.question,
+                        style: const TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 20, fontWeight: FontWeight.w700, height: 1.6),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ),
                 ),
-              );
-            }),
 
-            SingleChildScrollView(
-              child: Column(
-                children: [
+                const SizedBox(height: 10),
 
-                  // ── الهيدر ──────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                        16, 12, 16, 0),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: _showExitDialog,
-                          child: Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceColor,
-                              borderRadius:
-                              BorderRadius.circular(10),
-                              border: Border.all(
-                                  color: AppColors.cardBorder),
-                            ),
-                            child: const Icon(
-                                Icons.close_rounded,
-                                color: AppColors.textSecondary,
-                                size: 18),
-                          ),
-                        ),
-                        const Spacer(),
-                        if (widget.isDoubleQuestion)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF8B2635)
-                                  .withOpacity(0.2),
-                              borderRadius:
-                              BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: const Color(0xFF8B2635),
-                                  width: 1.5),
-                            ),
-                            child: const Text('💥 سؤال مزدوج',
-                                style: TextStyle(
-                                    color: Color(0xFF8B2635),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold)),
-                          )
-                        else if (widget.bonusPoints > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF9B59B6)
-                                  .withOpacity(0.2),
-                              borderRadius:
-                              BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: const Color(0xFF9B59B6),
-                                  width: 1.5),
-                            ),
-                            child: Text(
-                                '🌟 ${widget.bonusPoints} نقطة',
-                                style: const TextStyle(
-                                    color: Color(0xFF9B59B6),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold)),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.surfaceColor,
-                              borderRadius:
-                              BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: AppColors.cardBorderGold),
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                    widget.category?.emoji ??
-                                        '🎯',
-                                    style: const TextStyle(
-                                        fontSize: 14)),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.category?.title ??
-                                      'عامة',
-                                  style: const TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 12,
-                                      fontWeight:
-                                      FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: widget.timeLimit <= 15
-                                ? AppColors.wrong
-                                .withOpacity(0.15)
-                                : Colors.transparent,
-                            borderRadius:
-                            BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            widget.timeLimit <= 15
-                                ? '⏱️ ${widget.timeLimit}ث'
-                                : 'سؤال ${widget.level == 1 ? "٢٠٠" : widget.level == 2 ? "٤٠٠" : "٦٠٠"}',
-                            style: TextStyle(
-                                color: widget.timeLimit <= 15
-                                    ? AppColors.wrong
-                                    : AppColors.textSecondary,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
+                // ===== الإجابة الصحيحة =====
+                if (_showAnswer)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _team1Color.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _team1Color.withOpacity(0.5), width: 1),
                     ),
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // ── نقاط الفريقين ───────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                padding:
-                                const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color:
-                                  _selectedTeam == 'team1'
-                                      ? AppColors.correct
-                                      .withOpacity(0.2)
-                                      : AppColors.surfaceColor,
-                                  borderRadius:
-                                  BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color:
-                                    _selectedTeam == 'team1'
-                                        ? AppColors.correct
-                                        : AppColors.correct
-                                        .withOpacity(0.3),
-                                    width:
-                                    _selectedTeam == 'team1'
-                                        ? 2
-                                        : 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.center,
-                                  children: [
-                                    const Text('🔵',
-                                        style: TextStyle(
-                                            fontSize: 16)),
-                                    const SizedBox(height: 2),
-                                    Text(widget.team1Name,
-                                        style: const TextStyle(
-                                            color: AppColors
-                                                .textPrimary,
-                                            fontSize: 11,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        overflow:
-                                        TextOverflow.ellipsis,
-                                        textAlign:
-                                        TextAlign.center,
-                                        maxLines: 1),
-                                    const SizedBox(height: 2),
-                                    Text('$_team1Points نقطة',
-                                        style: const TextStyle(
-                                            color:
-                                            AppColors.correct,
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center),
-                                  ],
-                                ),
-                              ),
-                              if (_pointsController.isAnimating &&
-                                  _selectedTeam == 'team1')
-                                Positioned(
-                                  top: -20,
-                                  left: 0,
-                                  right: 0,
-                                  child: FadeTransition(
-                                    opacity: _pointsFade,
-                                    child: ScaleTransition(
-                                      scale: _pointsScale,
-                                      child: Text(
-                                        '+$_effectivePoints',
-                                        style: const TextStyle(
-                                            color:
-                                            AppColors.correct,
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(
-                              horizontal: 8),
-                          child: Text('VS',
-                              style: TextStyle(
-                                  color: AppColors.primary,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        Expanded(
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                padding:
-                                const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 8),
-                                decoration: BoxDecoration(
-                                  color:
-                                  _selectedTeam == 'team2'
-                                      ? AppColors.correct
-                                      .withOpacity(0.2)
-                                      : AppColors.surfaceColor,
-                                  borderRadius:
-                                  BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color:
-                                    _selectedTeam == 'team2'
-                                        ? AppColors.correct
-                                        : AppColors.wrong
-                                        .withOpacity(0.3),
-                                    width:
-                                    _selectedTeam == 'team2'
-                                        ? 2
-                                        : 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.center,
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.center,
-                                  children: [
-                                    const Text('🔴',
-                                        style: TextStyle(
-                                            fontSize: 16)),
-                                    const SizedBox(height: 2),
-                                    Text(widget.team2Name,
-                                        style: const TextStyle(
-                                            color: AppColors
-                                                .textPrimary,
-                                            fontSize: 11,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        overflow:
-                                        TextOverflow.ellipsis,
-                                        textAlign:
-                                        TextAlign.center,
-                                        maxLines: 1),
-                                    const SizedBox(height: 2),
-                                    Text('$_team2Points نقطة',
-                                        style: const TextStyle(
-                                            color: AppColors.wrong,
-                                            fontSize: 13,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center),
-                                  ],
-                                ),
-                              ),
-                              if (_pointsController.isAnimating &&
-                                  _selectedTeam == 'team2')
-                                Positioned(
-                                  top: -20,
-                                  left: 0,
-                                  right: 0,
-                                  child: FadeTransition(
-                                    opacity: _pointsFade,
-                                    child: ScaleTransition(
-                                      scale: _pointsScale,
-                                      child: Text(
-                                        '+$_effectivePoints',
-                                        style: const TextStyle(
-                                            color:
-                                            AppColors.correct,
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                        textAlign:
-                                        TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // ── وسائل المساعدة ──────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 3,
-                            runSpacing: 3,
-                            children: [
-                              _buildLifeline(
-                                  emoji: '📞',
-                                  label: 'اتصال',
-                                  used: _team1CallUsed,
-                                  onTap: () =>
-                                      _useCall('team1')),
-                              _buildLifeline(
-                                  emoji: '🔍',
-                                  label: 'حرف',
-                                  used: _team1RevealUsed,
-                                  onTap: () =>
-                                      _useReveal('team1')),
-                              _buildLifeline(
-                                  emoji: '⏳',
-                                  label: '+30ث',
-                                  used: _team1ExtendUsed,
-                                  onTap: () =>
-                                      _useExtend('team1')),
-                              _buildLifeline(
-                                  emoji: '🔀',
-                                  label: 'بديل',
-                                  used: _team1AltUsed,
-                                  onTap: () =>
-                                      _useAlt('team1')),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 30,
-                          color: AppColors.cardBorder,
-                          margin: const EdgeInsets.symmetric(
-                              horizontal: 4),
-                        ),
-                        Expanded(
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 3,
-                            runSpacing: 3,
-                            children: [
-                              _buildLifeline(
-                                  emoji: '📞',
-                                  label: 'اتصال',
-                                  used: _team2CallUsed,
-                                  onTap: () =>
-                                      _useCall('team2')),
-                              _buildLifeline(
-                                  emoji: '🔍',
-                                  label: 'حرف',
-                                  used: _team2RevealUsed,
-                                  onTap: () =>
-                                      _useReveal('team2')),
-                              _buildLifeline(
-                                  emoji: '⏳',
-                                  label: '+30ث',
-                                  used: _team2ExtendUsed,
-                                  onTap: () =>
-                                      _useExtend('team2')),
-                              _buildLifeline(
-                                  emoji: '🔀',
-                                  label: 'بديل',
-                                  used: _team2AltUsed,
-                                  onTap: () =>
-                                      _useAlt('team2')),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // ── شريط الوقت ──────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('$_effectivePoints نقطة',
-                                style: const TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold)),
-                            if (_revealedHint.isNotEmpty)
-                              Container(
-                                padding:
-                                const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 3),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF2D7A5F)
-                                      .withOpacity(0.15),
-                                  borderRadius:
-                                  BorderRadius.circular(12),
-                                  border: Border.all(
-                                      color:
-                                      const Color(0xFF2D7A5F),
-                                      width: 1),
-                                ),
-                                child: Text(_revealedHint,
-                                    style: const TextStyle(
-                                        color:
-                                        Color(0xFF2D7A5F),
-                                        fontSize: 12,
-                                        fontWeight:
-                                        FontWeight.bold)),
+                            Container(
+                              width: 30, height: 30,
+                              decoration: BoxDecoration(shape: BoxShape.circle, color: _team1Color.withOpacity(0.2),
+                                  border: Border.all(color: _team1Color.withOpacity(0.5))),
+                              child: Icon(Icons.check_rounded, color: _team1Color, size: 16),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('الإجابة الصحيحة',
+                                      style: TextStyle(fontFamily: 'Tajawal', color: _team1Color.withOpacity(0.7), fontSize: 10, letterSpacing: 1)),
+                                  const SizedBox(height: 3),
+                                  Text(question.answer ?? '—',
+                                      style: const TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 16, fontWeight: FontWeight.w700)),
+                                ],
                               ),
-                            Row(
-                              children: [
-                                Icon(
-                                  _timesUp
-                                      ? Icons.timer_off_outlined
-                                      : Icons.timer_outlined,
-                                  color: _timesUp
-                                      ? AppColors.wrong
-                                      : _timerColor,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  _timesUp
-                                      ? 'انتهى الوقت!'
-                                      : '$_timeLeft ث',
-                                  style: TextStyle(
-                                      color: _timesUp
-                                          ? AppColors.wrong
-                                          : _timerColor,
-                                      fontSize: 13,
-                                      fontWeight:
-                                      FontWeight.bold),
-                                ),
-                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: _timeProgress,
-                            backgroundColor:
-                            AppColors.surfaceColor,
-                            valueColor: AlwaysStoppedAnimation(
-                                _timesUp
-                                    ? AppColors.wrong
-                                    : _timerColor),
-                            minHeight: 5,
-                          ),
-                        ),
+                        if (hasAnswerImage) ...[const SizedBox(height: 12), _buildAnswerImage(question.answerImageUrl!)],
                       ],
                     ),
                   ),
 
+                const SizedBox(height: 14),
+
+                // ===== أزرار الفريقين =====
+                if (_selectedTeam == null) ...[
+                  Text(_showAnswer ? 'من أجاب صح؟' : 'اضغط على الفريق الذي أجاب',
+                      style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.5), fontSize: 12)),
                   const SizedBox(height: 10),
-
-                  // ── صورة/فيديو السؤال ───────────
-                  if (hasQuestionVideo)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
-                      child: _buildQuestionVideo(),
-                    )
-                  else if (hasQuestionImage)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
-                      child: _buildQuestionImage(
-                          question.imageUrl!),
-                    ),
-
-                  if (hasQuestionVideo || hasQuestionImage)
-                    const SizedBox(height: 10),
-
-                  // ── بطاقة السؤال ────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16),
-                    child: FadeTransition(
-                      opacity: _questionFade,
-                      child: SlideTransition(
-                        position: _questionSlide,
+                  Row(
+                    children: [
+                      Expanded(child: _winnerBtn('team1', widget.team1Name, _team1Color)),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: () => _selectWinner('none'),
                         child: Container(
-                          width: double.infinity,
-                          constraints: const BoxConstraints(
-                              minHeight: 80),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppColors.cardBackground,
-                            borderRadius:
-                            BorderRadius.circular(20),
-                            border: Border.all(
-                              color: widget.isDoubleQuestion
-                                  ? const Color(0xFF8B2635)
-                                  .withOpacity(0.8)
-                                  : widget.bonusPoints > 0
-                                  ? const Color(0xFF9B59B6)
-                                  .withOpacity(0.8)
-                                  : _timesUp
-                                  ? AppColors.primary
-                                  .withOpacity(0.8)
-                                  : AppColors
-                                  .cardBorderGold,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: widget.isDoubleQuestion
-                                      ? const Color(0xFF8B2635)
-                                      .withOpacity(0.15)
-                                      : widget.bonusPoints > 0
-                                      ? const Color(0xFF9B59B6)
-                                      .withOpacity(0.15)
-                                      : AppColors.glowGold,
-                                  blurRadius: 20),
-                            ],
-                          ),
-                          child: Text(
-                            question.question,
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              height: 1.6,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                          width: 48, height: 52,
+                          decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: _gold.withOpacity(0.2))),
+                          child: Center(child: Text('—', style: TextStyle(color: _goldText.withOpacity(0.4), fontSize: 18))),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(child: _winnerBtn('team2', widget.team2Name, _team2Color)),
+                    ],
+                  ),
+                ],
+
+                if (_selectedTeam != null)
+                  GestureDetector(
+                    onTap: _goToResult,
+                    child: Container(
+                      width: double.infinity, height: 52,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3D2800), Color(0xFFB8890A), Color(0xFFE8C840), Color(0xFFB8890A), Color(0xFF3D2800)],
+                          begin: Alignment.centerLeft, end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [BoxShadow(color: _gold.withOpacity(0.3), blurRadius: 15)],
+                      ),
+                      child: const Center(
+                        child: Text('ارجع للوحة 🎯',
+                            style: TextStyle(fontFamily: 'Tajawal', color: Color(0xFF1A0E00), fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 2)),
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 8),
-
-                  // ── الإجابة الصحيحة ─────────────
-                  if (_showAnswer)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16),
-                      child: AnimatedContainer(
-                        duration:
-                        const Duration(milliseconds: 400),
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppColors.correct
-                              .withOpacity(0.15),
-                          borderRadius:
-                          BorderRadius.circular(16),
-                          border: Border.all(
-                              color: AppColors.correct,
-                              width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                                color: AppColors.correct
-                                    .withOpacity(0.2),
-                                blurRadius: 15),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration:
-                                  const BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.correct,
-                                  ),
-                                  child: const Icon(
-                                      Icons.check_rounded,
-                                      color: Colors.white,
-                                      size: 18),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                          'الإجابة الصحيحة',
-                                          style: TextStyle(
-                                              color:
-                                              AppColors.correct,
-                                              fontSize: 11,
-                                              fontWeight:
-                                              FontWeight.bold,
-                                              letterSpacing: 1)),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                          question.answer ?? '—',
-                                          style: const TextStyle(
-                                              color: AppColors
-                                                  .textPrimary,
-                                              fontSize: 16,
-                                              fontWeight:
-                                              FontWeight.bold)),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (hasAnswerImage) ...[
-                              const SizedBox(height: 12),
-                              _buildAnswerImage(
-                                  question.answerImageUrl!),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 12),
-
-                  // ── أزرار الفريقين ──────────────
-                  if (_selectedTeam == null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          16, 0, 16, 8),
-                      child: Column(
-                        children: [
-                          Text(
-                            _showAnswer
-                                ? 'من أجاب صح؟'
-                                : 'اضغط على الفريق الذي أجاب',
-                            style: const TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: 12),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      _selectWinner('team1'),
-                                  child: Container(
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.correct
-                                          .withOpacity(0.15),
-                                      borderRadius:
-                                      BorderRadius.circular(
-                                          14),
-                                      border: Border.all(
-                                          color: AppColors.correct,
-                                          width: 1.5),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                          '🔵 ${widget.team1Name}',
-                                          style: const TextStyle(
-                                              color:
-                                              AppColors.correct,
-                                              fontSize: 13,
-                                              fontWeight:
-                                              FontWeight.bold),
-                                          overflow: TextOverflow
-                                              .ellipsis,
-                                          textAlign:
-                                          TextAlign.center),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              GestureDetector(
-                                onTap: () =>
-                                    _selectWinner('none'),
-                                child: Container(
-                                  width: 52,
-                                  height: 52,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.surfaceColor,
-                                    borderRadius:
-                                    BorderRadius.circular(14),
-                                    border: Border.all(
-                                        color:
-                                        AppColors.cardBorder,
-                                        width: 1),
-                                  ),
-                                  child: const Center(
-                                    child: Text('—',
-                                        style: TextStyle(
-                                            color:
-                                            AppColors.textHint,
-                                            fontSize: 18)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      _selectWinner('team2'),
-                                  child: Container(
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.wrong
-                                          .withOpacity(0.15),
-                                      borderRadius:
-                                      BorderRadius.circular(
-                                          14),
-                                      border: Border.all(
-                                          color: AppColors.wrong,
-                                          width: 1.5),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                          '🔴 ${widget.team2Name}',
-                                          style: const TextStyle(
-                                              color: AppColors.wrong,
-                                              fontSize: 13,
-                                              fontWeight:
-                                              FontWeight.bold),
-                                          overflow: TextOverflow
-                                              .ellipsis,
-                                          textAlign:
-                                          TextAlign.center),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  if (_selectedTeam != null)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                          16, 0, 16, 16),
-                      child: GestureDetector(
-                        onTap: _goToResult,
-                        child: Container(
-                          width: double.infinity,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                AppColors.primaryDark,
-                                AppColors.primary,
-                                AppColors.primaryLight,
-                              ],
-                            ),
-                            borderRadius:
-                            BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: AppColors.glowGold,
-                                  blurRadius: 15),
-                            ],
-                          ),
-                          child: const Center(
-                            child: Text('ارجع للوحة 🎯',
-                                style: TextStyle(
-                                  color: AppColors.background,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                )),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                  const SizedBox(height: 8),
-                ],
-              ),
+                const SizedBox(height: 20),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _teamCard(String teamId, String name, int points, Color color) {
+    final isSelected = _selectedTeam == teamId;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? color.withOpacity(0.15) : _cardBg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? color : color.withOpacity(0.3), width: isSelected ? 1 : 0.5),
+          ),
+          child: Column(
+            children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(shape: BoxShape.circle, color: color)),
+              const SizedBox(height: 4),
+              Text(name, style: const TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 10, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, maxLines: 1),
+              const SizedBox(height: 2),
+              Text('$points', style: TextStyle(fontFamily: 'Tajawal', color: color, fontSize: 18, fontWeight: FontWeight.w900)),
+            ],
+          ),
+        ),
+        if (_pointsController.isAnimating && _selectedTeam == teamId)
+          Positioned(
+            top: -20, left: 0, right: 0,
+            child: FadeTransition(
+              opacity: _pointsFade,
+              child: ScaleTransition(
+                scale: _pointsScale,
+                child: Text('+$_effectivePoints',
+                    style: TextStyle(fontFamily: 'Tajawal', color: color, fontSize: 18, fontWeight: FontWeight.w900),
+                    textAlign: TextAlign.center),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _winnerBtn(String teamId, String name, Color color) {
+    return GestureDetector(
+      onTap: () => _selectWinner(teamId),
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withOpacity(0.6), width: 0.8),
+        ),
+        child: Center(
+          child: Text(name,
+              style: TextStyle(fontFamily: 'Tajawal', color: color, fontSize: 13, fontWeight: FontWeight.w700),
+              overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+        ),
+      ),
+    );
+  }
+
+  Widget _labelChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.8),
+      ),
+      child: Text(text, style: TextStyle(fontFamily: 'Tajawal', color: color, fontSize: 11, fontWeight: FontWeight.w600)),
     );
   }
 
@@ -1646,65 +835,62 @@ class _GameScreenState extends State<GameScreen>
     _timer?.cancel();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.cardBackground,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(
-              color: AppColors.cardBorderGold),
-        ),
-        title: const Text('مغادرة اللعبة؟',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center),
-        content: const Text('سيتم فقدان تقدمك الحالي',
-            style:
-            TextStyle(color: AppColors.textSecondary),
-            textAlign: TextAlign.center),
-        actions: [
-          Row(
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _cardBg, borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _gold.withOpacity(0.3)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    if (!_timesUp && !_showAnswer)
-                      _resumeTimer();
-                  },
-                  child: const Text('تابع',
-                      style: TextStyle(
-                          color: AppColors.primary)),
-                ),
-              ),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.pop(context, {
-                      'team1': _team1Points,
-                      'team2': _team2Points,
-                      'team1CallUsed': _team1CallUsed,
-                      'team1RevealUsed': _team1RevealUsed,
-                      'team1ExtendUsed': _team1ExtendUsed,
-                      'team1AltUsed': _team1AltUsed,
-                      'team2CallUsed': _team2CallUsed,
-                      'team2RevealUsed': _team2RevealUsed,
-                      'team2ExtendUsed': _team2ExtendUsed,
-                      'team2AltUsed': _team2AltUsed,
-                    });
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                      AppColors.wrong.withOpacity(0.8)),
-                  child: const Text('خروج',
-                      style:
-                      TextStyle(color: Colors.white)),
-                ),
+              const Text('⚠️', style: TextStyle(fontSize: 40)),
+              const SizedBox(height: 12),
+              const Text('مغادرة السؤال؟',
+                  style: TextStyle(fontFamily: 'Tajawal', color: _goldLight, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text('سيتم فقدان تقدمك الحالي',
+                  style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.6), fontSize: 13)),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () { Navigator.pop(context); if (!_timesUp && !_showAnswer) _resumeTimer(); },
+                      child: Container(height: 46,
+                        decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(23),
+                            border: Border.all(color: _gold.withOpacity(0.3))),
+                        child: const Center(child: Text('تابع', style: TextStyle(fontFamily: 'Tajawal', color: _gold, fontSize: 14))),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pop(context, {
+                          'team1': _team1Points, 'team2': _team2Points,
+                          'team1CallUsed': _team1CallUsed, 'team1RevealUsed': _team1RevealUsed,
+                          'team1ExtendUsed': _team1ExtendUsed, 'team1AltUsed': _team1AltUsed,
+                          'team2CallUsed': _team2CallUsed, 'team2RevealUsed': _team2RevealUsed,
+                          'team2ExtendUsed': _team2ExtendUsed, 'team2AltUsed': _team2AltUsed,
+                        });
+                      },
+                      child: Container(height: 46,
+                        decoration: BoxDecoration(color: _team2Color.withOpacity(0.15), borderRadius: BorderRadius.circular(23),
+                            border: Border.all(color: _team2Color.withOpacity(0.5))),
+                        child: const Center(child: Text('خروج', style: TextStyle(fontFamily: 'Tajawal', color: _team2Color, fontSize: 14, fontWeight: FontWeight.w700))),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
