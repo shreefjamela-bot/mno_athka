@@ -318,6 +318,19 @@ class _WheelScreenState extends State<WheelScreen> with TickerProviderStateMixin
 
     return Scaffold(
       backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _gold.withOpacity(0.3))),
+            child: Icon(Icons.arrow_back_ios_rounded, color: _gold.withOpacity(0.7), size: 16),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _entranceFade,

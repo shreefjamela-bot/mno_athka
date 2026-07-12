@@ -144,7 +144,7 @@ class _VideoCardState extends State<_VideoCard> {
             (int viewId) {
           final video = html.VideoElement()
             ..src = 'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4'
-            ..autoplay = true
+            ..autoplay = false
             ..loop = true
             ..muted = true
             ..controls = true

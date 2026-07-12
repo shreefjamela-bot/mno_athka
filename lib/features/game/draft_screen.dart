@@ -193,6 +193,19 @@ class _DraftScreenState extends State<DraftScreen> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: _phase != DraftPhase.enterNames ? GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            margin: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: _cardBg, borderRadius: BorderRadius.circular(12), border: Border.all(color: _gold.withOpacity(0.3))),
+            child: Icon(Icons.arrow_back_ios_rounded, color: _gold.withOpacity(0.7), size: 16),
+          ),
+        ) : null,
+      ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnim,
