@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import '../../data/models/category_model.dart';
 import 'game_screen.dart';
+import 'ai_challenge_screen.dart';
 import 'result_screen.dart';
 
 const _gold = Color(0xFFC49830);
@@ -197,6 +198,34 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
 
   void _playCell(CategoryModel category, int level) async {
     if (_isPlayed(category.id, level)) return;
+
+    // ✅ فئة تحدي الذكاء تفتح شاشة خاصة
+    if (category.id == 'ai_challenge') {
+      final result = await Navigator.push<Map<String, dynamic>>(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => AiChallengeScreen(
+            level: level,
+            category: category,
+            team1Name: widget.team1Name,
+            team2Name: widget.team2Name,
+          ),
+          transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+      );
+      if (result != null && mounted) {
+        setState(() {
+          _playedMap[category.id]![level] = true;
+          _team1Points += (result['team1'] ?? 0) as int;
+          _team2Points += (result['team2'] ?? 0) as int;
+          _roundsPlayed++;
+          _currentTeam = _currentTeam == 1 ? 2 : 1;
+        });
+        if (_isGameOver) Future.delayed(const Duration(milliseconds: 400), _showFinalResult);
+      }
+      return;
+    }
 
     bool isBetting = false;
     int betAmount = 0;

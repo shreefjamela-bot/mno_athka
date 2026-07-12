@@ -1,4 +1,4 @@
-﻿name: mno_athka
+name: mno_athka
 description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
@@ -13,6 +13,7 @@ dependencies:
   confetti: ^0.8.0
   audioplayers: ^6.6.0
   cached_network_image: ^3.4.1
+  http: ^1.6.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
