@@ -1,18 +1,19 @@
 // ==============================
-// شاشة عجلة الحظ
-// اسم الملف: wheel_screen.dart
-// المكان: lib/features/game/
+// شاشة عجلة الحظ — Luxury Theme
 // ==============================
 
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import 'match_board_screen.dart';
 import '../../data/models/category_model.dart';
 
-// ==============================
-// نموذج التحدي
-// ==============================
+const _gold = Color(0xFFC49830);
+const _goldLight = Color(0xFFF0D060);
+const _goldDark = Color(0xFF6B4A10);
+const _bg = Color(0xFF080808);
+const _cardBg = Color(0xFF0E0E0E);
+const _goldText = Color(0xFF5A4820);
+
 class LuckChallenge {
   final String id;
   final String emoji;
@@ -41,60 +42,57 @@ const List<LuckChallenge> kChallenges = [
         '• جميع الأسئلة في الجولة الأولى فقط تُحتسب بالضعف\n'
         '• السؤال 200 يصير 400 ✦ السؤال 400 يصير 800 ✦ السؤال 600 يصير 1200\n'
         '• بعد الجولة الأولى ترجع النقاط عادية',
-    color: Color(0xFFFFD700),
+    color: Color(0xFFC49830),
   ),
   LuckChallenge(
     id: 'bonus_1000',
     emoji: '🌟',
     title: 'سؤال الألف',
-    description: 'سؤال مفاجئ بـ 1000 نقطة في منتصف المباراة',
+    description: 'سؤال مفاجئ بـ 1000 نقطة عند أول سؤال 600',
     details: '📌 كيف يعمل:\n'
-        '• يُطبّق على فئتين عشوائيتين فقط من بين الـ 6 فئات\n'
-        '• فقط على السؤال الصعب مستوى 600\n'
+        '• يُطبّق عند أول سؤال مستوى 600 في المباراة\n'
         '• قيمته 1000 نقطة بدل 600\n'
-        '• سؤال إضافي منفصل — يُلعب بعد سؤال الـ 600 مباشرة',
+        '• سؤال إضافي منفصل من فئة عشوائية',
     color: Color(0xFF9B59B6),
   ),
   LuckChallenge(
     id: 'normal',
     emoji: '🎲',
     title: 'لا تحدي',
-    description: 'الفريقان يجيبان على كل مستوى بسؤال الصعب 600',
+    description: 'مباراة عادية بدون تحديات إضافية',
     details: '📌 كيف يعمل:\n'
         '• لا توجد تحديات إضافية\n'
         '• كل فريق يلعب بشكل عادي في فئاته\n'
         '• كل مستوى (200، 400، 600) يُلعب بسؤال واحد لكل فريق',
-    color: Color(0xFF6B6B6B),
+    color: Color(0xFF4A4A4A),
   ),
   LuckChallenge(
     id: 'time_pressure',
     emoji: '⏱️',
     title: 'ضغط الوقت',
-    description: 'كل سؤال عنده 15 ثانية فقط بدل 120',
+    description: 'كل سؤال عنده 15 ثانية فقط',
     details: '📌 كيف يعمل:\n'
         '• وقت الإجابة يتقلص من 120 ثانية إلى 15 ثانية\n'
         '• ينطبق على جميع الأسئلة في المباراة\n'
         '• إذا انتهى الوقت بدون إجابة — لا نقاط للسؤال',
-    color: Color(0xFFFF6B35),
+    color: Color(0xFFCC5500),
   ),
   LuckChallenge(
     id: 'double_bet',
     emoji: '⏫',
     title: 'الرهان',
-    description: 'الفريقان يراهنان بنقاطهم في آخر سؤالين صعبين 600',
+    description: 'راهن بنقاطك في أسئلة المستوى 600',
     details: '📌 كيف يعمل:\n'
-        '• يُطبّق فقط على آخر سؤالين مستوى 600 في المباراة\n'
-        '  (عندما يتبقى لكل فريق فئة واحدة فقط)\n'
+        '• يُطبّق فقط على أسئلة مستوى 600\n'
         '• قبل السؤال: كل فريق يختار كم نقطة يراهن بها\n'
-        '• الحد الأقصى للرهان = نقاط الفريق الحالية\n'
         '• إذا أجاب صح → يكسب النقاط المراهن بها\n'
         '• إذا أجاب غلط → يخسر النقاط المراهن بها',
-    color: Color(0xFFD4AF6A),
+    color: Color(0xFF8B6914),
   ),
 ];
 
 // ==============================
-// رسام العجلة
+// رسام العجلة — Luxury
 // ==============================
 class WheelPainter extends CustomPainter {
   final double rotation;
@@ -105,41 +103,38 @@ class WheelPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 8;
+    final radius = size.width / 2 - 6;
     final count = kChallenges.length;
     final sweepAngle = 2 * pi / count;
 
+    // رسم الشرائح
     for (int i = 0; i < count; i++) {
       final startAngle = rotation + i * sweepAngle;
       final challenge = kChallenges[i];
       final isHighlighted = i == highlightedIndex;
 
-      final paint = Paint()
-        ..color = isHighlighted
-            ? challenge.color
-            : challenge.color.withOpacity(0.7)
-        ..style = PaintingStyle.fill;
-
+      // شريحة ممتلئة
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        paint,
+        startAngle, sweepAngle, true,
+        Paint()
+          ..color = isHighlighted
+              ? challenge.color.withOpacity(0.95)
+              : challenge.color.withOpacity(0.6)
+          ..style = PaintingStyle.fill,
       );
 
-      final borderPaint = Paint()
-        ..color = const Color(0xFF0D0D0F)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
+      // حدود ذهبية
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle,
-        true,
-        borderPaint,
+        startAngle, sweepAngle, true,
+        Paint()
+          ..color = const Color(0xFF8B6914)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
       );
 
+      // الإيموجي
       final textAngle = startAngle + sweepAngle / 2;
       final textRadius = radius * 0.65;
       final textX = center.dx + cos(textAngle) * textRadius;
@@ -148,7 +143,7 @@ class WheelPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: challenge.emoji,
-          style: TextStyle(fontSize: isHighlighted ? 22 : 18),
+          style: TextStyle(fontSize: isHighlighted ? 22 : 17),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -159,27 +154,25 @@ class WheelPainter extends CustomPainter {
       canvas.restore();
     }
 
-    canvas.drawCircle(
-        center,
-        28,
+    // حلقة خارجية ذهبية
+    canvas.drawCircle(center, radius,
         Paint()
-          ..color = const Color(0xFF0D0D0F)
-          ..style = PaintingStyle.fill);
-    canvas.drawCircle(
-        center,
-        28,
-        Paint()
-          ..color = AppColors.primary
+          ..color = const Color(0xFFC49830)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 3);
+          ..strokeWidth = 2.5);
 
-    _drawStar(canvas, center, 14, AppColors.primary);
+    // مركز العجلة
+    canvas.drawCircle(center, 30,
+        Paint()..color = const Color(0xFF0A0A0A)..style = PaintingStyle.fill);
+    canvas.drawCircle(center, 30,
+        Paint()..color = const Color(0xFFC49830)..style = PaintingStyle.stroke..strokeWidth = 2);
+
+    // نجمة في المركز
+    _drawStar(canvas, center, 14, const Color(0xFFF0D060));
   }
 
   void _drawStar(Canvas canvas, Offset center, double size, Color color) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
     final path = Path();
     for (int i = 0; i < 5; i++) {
       final outerAngle = (i * 4 * pi / 5) - pi / 2;
@@ -188,10 +181,8 @@ class WheelPainter extends CustomPainter {
       final outerY = center.dy + size * sin(outerAngle);
       final innerX = center.dx + (size * 0.4) * cos(innerAngle);
       final innerY = center.dy + (size * 0.4) * sin(innerAngle);
-      if (i == 0)
-        path.moveTo(outerX, outerY);
-      else
-        path.lineTo(outerX, outerY);
+      if (i == 0) path.moveTo(outerX, outerY);
+      else path.lineTo(outerX, outerY);
       path.lineTo(innerX, innerY);
     }
     path.close();
@@ -204,7 +195,7 @@ class WheelPainter extends CustomPainter {
 }
 
 // ==============================
-// الشاشة الرئيسية
+// شاشة عجلة الحظ
 // ==============================
 class WheelScreen extends StatefulWidget {
   final String team1Name;
@@ -224,13 +215,13 @@ class WheelScreen extends StatefulWidget {
   State<WheelScreen> createState() => _WheelScreenState();
 }
 
-class _WheelScreenState extends State<WheelScreen>
-    with TickerProviderStateMixin {
-
+class _WheelScreenState extends State<WheelScreen> with TickerProviderStateMixin {
   late AnimationController _spinController;
   late Animation<double> _spinAnimation;
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
+  late AnimationController _entranceController;
+  late Animation<double> _entranceFade;
 
   double _currentRotation = 0;
   int _resultIndex = 0;
@@ -245,17 +236,26 @@ class _WheelScreenState extends State<WheelScreen>
     _spinController = AnimationController(vsync: this);
     _glowController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+    _glowAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _entranceFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _entranceController, curve: Curves.easeOut),
+    );
+    _entranceController.forward();
   }
 
   @override
   void dispose() {
     _spinController.dispose();
     _glowController.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
 
@@ -279,18 +279,14 @@ class _WheelScreenState extends State<WheelScreen>
     _spinAnimation = Tween<double>(
       begin: _currentRotation,
       end: _currentRotation + totalRotation,
-    ).animate(CurvedAnimation(
-      parent: _spinController,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _spinController, curve: Curves.easeOutCubic));
 
     _spinController.forward().then((_) {
       _currentRotation = _spinAnimation.value;
       final count = kChallenges.length;
       final sweepAngle = 2 * pi / count;
       final normalizedAngle = (-_currentRotation - pi / 2) % (2 * pi);
-      final positiveAngle =
-      normalizedAngle < 0 ? normalizedAngle + 2 * pi : normalizedAngle;
+      final positiveAngle = normalizedAngle < 0 ? normalizedAngle + 2 * pi : normalizedAngle;
       _resultIndex = (positiveAngle / sweepAngle).floor() % count;
 
       setState(() {
@@ -310,7 +306,7 @@ class _WheelScreenState extends State<WheelScreen>
           team2Name: widget.team2Name,
           team1Categories: widget.team1Categories,
           team2Categories: widget.team2Categories,
-          challenge: kChallenges[_resultIndex].id,
+          challenge: _hasResult ? kChallenges[_resultIndex].id : 'normal',
         ),
       ),
     );
@@ -321,81 +317,86 @@ class _WheelScreenState extends State<WheelScreen>
     final result = kChallenges[_resultIndex];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _bg,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom,
-            ),
-            child: IntrinsicHeight(
+        child: FadeTransition(
+          opacity: _entranceFade,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
+                  const SizedBox(height: 32),
 
-                  // الهيدر
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                    child: Column(
-                      children: [
-                        ShaderMask(
-                          shaderCallback: (bounds) =>
-                              const LinearGradient(
-                                colors: [
-                                  AppColors.primaryLight,
-                                  AppColors.primary,
-                                  AppColors.primaryDark,
-                                ],
+                  // ===== هيدر =====
+                  Row(
+                    children: [
+                      Expanded(child: Container(height: 0.5, color: _gold.withOpacity(0.3))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [_goldLight, _gold, _goldDark],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
                               ).createShader(bounds),
-                          child: const Text(
-                            '🎡 عجلة الحظ',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 2,
+                              child: const Text('عجلة الحظ',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 34,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                ),
+                              ),
                             ),
-                          ),
+                            Text('أدر العجلة لتحديد تحدي المباراة',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                color: _goldText.withOpacity(0.7),
+                                fontSize: 13,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        const Text(
-                          'أدر العجلة لتحديد تحدي المباراة',
-                          style: TextStyle(
-                              color: Colors.white54, fontSize: 14),
-                        ),
-                      ],
-                    ),
+                      ),
+                      Expanded(child: Container(height: 0.5, color: _gold.withOpacity(0.3))),
+                    ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 32),
 
-                  // العجلة
+                  // ===== العجلة =====
                   SizedBox(
-                    height: 300,
+                    height: 310,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        if (_hasResult)
-                          AnimatedBuilder(
-                            animation: _glowAnimation,
-                            builder: (_, __) => Container(
-                              width: 280,
-                              height: 280,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: result.color.withOpacity(
-                                        0.3 * _glowAnimation.value),
-                                    blurRadius: 40,
-                                    spreadRadius: 10,
-                                  ),
-                                ],
-                              ),
+                        // توهج خلفي
+                        AnimatedBuilder(
+                          animation: _glowAnimation,
+                          builder: (_, __) => Container(
+                            width: 300,
+                            height: 300,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (_hasResult ? result.color : _gold)
+                                      .withOpacity(0.15 * _glowAnimation.value),
+                                  blurRadius: 50,
+                                  spreadRadius: 15,
+                                ),
+                              ],
                             ),
                           ),
+                        ),
 
+                        // العجلة
                         AnimatedBuilder(
                           animation: _isSpinning
                               ? _spinAnimation
@@ -405,220 +406,233 @@ class _WheelScreenState extends State<WheelScreen>
                                 ? _spinAnimation.value
                                 : _currentRotation;
                             return CustomPaint(
-                              size: const Size(260, 260),
+                              size: const Size(270, 270),
                               painter: WheelPainter(
                                 rotation: rotation,
-                                highlightedIndex:
-                                _hasResult && !_isSpinning
-                                    ? _resultIndex
-                                    : -1,
+                                highlightedIndex: _hasResult && !_isSpinning ? _resultIndex : -1,
                               ),
                             );
                           },
                         ),
 
-                        // المؤشر
+                        // مؤشر ذهبي
                         Positioned(
-                          top: 0,
-                          child: Container(
-                            width: 20,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: const BorderRadius.only(
-                                bottomLeft: Radius.circular(10),
-                                bottomRight: Radius.circular(10),
+                          top: 2,
+                          child: AnimatedBuilder(
+                            animation: _glowAnimation,
+                            builder: (_, __) => Container(
+                              width: 22,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [_goldLight, _gold, _goldDark],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  bottomLeft: Radius.circular(11),
+                                  bottomRight: Radius.circular(11),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _gold.withOpacity(0.5 * _glowAnimation.value),
+                                    blurRadius: 12,
+                                  ),
+                                ],
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                    color: AppColors.glowGold,
-                                    blurRadius: 8),
-                              ],
+                              child: const Icon(Icons.arrow_drop_down, color: Color(0xFF1A0E00), size: 22),
                             ),
-                            child: const Icon(Icons.arrow_drop_down,
-                                color: Colors.black, size: 20),
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
-                  // النتيجة والأزرار
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                    child: Column(
-                      children: [
-                        if (_hasResult) ...[
+                  // ===== النتيجة والأزرار =====
+                  if (_hasResult) ...[
 
-                          // بطاقة النتيجة
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 400),
-                            curve: Curves.elasticOut,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: result.color.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: result.color, width: 2),
-                              boxShadow: [
-                                BoxShadow(
-                                    color:
-                                    result.color.withOpacity(0.2),
-                                    blurRadius: 20),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Text(result.emoji,
-                                        style: const TextStyle(
-                                            fontSize: 36)),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            result.title,
-                                            style: TextStyle(
-                                              color: result.color,
-                                              fontSize: 20,
-                                              fontWeight:
-                                              FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            result.description,
-                                            style: const TextStyle(
-                                                color: Colors.white70,
-                                                fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-
-                                // تفاصيل التحدي
-                                if (_showDetails) ...[
-                                  const SizedBox(height: 12),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: result.color
-                                          .withOpacity(0.08),
-                                      borderRadius:
-                                      BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: result.color
-                                              .withOpacity(0.3)),
-                                    ),
-                                    child: Text(
-                                      result.details,
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                        height: 1.7,
-                                      ),
-                                      textAlign: TextAlign.right,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(14)),
-                              ),
-                              onPressed: _goToMatch,
-                              child: const Text(
-                                'ابدأ المباراة! 🎮',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                        ] else ...[
-
-                          GestureDetector(
-                            onTap: _isSpinning ? null : _spin,
-                            child: AnimatedContainer(
-                              duration:
-                              const Duration(milliseconds: 200),
-                              width: double.infinity,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: _isSpinning
-                                      ? [Colors.grey, Colors.grey]
-                                      : [
-                                    AppColors.primaryDark,
-                                    AppColors.primary,
-                                    AppColors.primaryLight,
-                                  ],
-                                ),
-                                borderRadius:
-                                BorderRadius.circular(16),
-                                boxShadow: _isSpinning
-                                    ? []
-                                    : [
-                                  BoxShadow(
-                                      color: AppColors.glowGold,
-                                      blurRadius: 20),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  _isSpinning
-                                      ? '🎡 تدور...'
-                                      : '🎡 أدر العجلة',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          TextButton(
-                            onPressed: _goToMatch,
-                            child: const Text(
-                              'تخطي ← ابدأ بدون تحدي',
-                              style: TextStyle(
-                                  color: Colors.white38,
-                                  fontSize: 14),
-                            ),
-                          ),
+                    // بطاقة النتيجة
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: result.color.withOpacity(0.6), width: 1),
+                        boxShadow: [
+                          BoxShadow(color: result.color.withOpacity(0.1), blurRadius: 20),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(result.emoji, style: const TextStyle(fontSize: 38)),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(result.title,
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        color: result.color,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                    Text(result.description,
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        color: _goldText.withOpacity(0.7),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          if (_showDetails) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              width: double.infinity,
+                              height: 0.5,
+                              color: _gold.withOpacity(0.2),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(result.details,
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                color: _goldText.withOpacity(0.8),
+                                fontSize: 12,
+                                height: 1.8,
+                              ),
+                              textAlign: TextAlign.right,
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
+
+                    const SizedBox(height: 20),
+
+                    // زر ابدأ المباراة
+                    GestureDetector(
+                      onTap: _goToMatch,
+                      child: Container(
+                        width: double.infinity,
+                        height: 58,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF3D2800),
+                              Color(0xFFB8890A),
+                              Color(0xFFE8C840),
+                              Color(0xFFB8890A),
+                              Color(0xFF3D2800),
+                            ],
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                          ),
+                          borderRadius: BorderRadius.circular(29),
+                          boxShadow: [
+                            BoxShadow(color: _gold.withOpacity(0.4), blurRadius: 25, spreadRadius: 2),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Text('ابدأ المباراة! 🎮',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF1A0E00),
+                              letterSpacing: 3,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  ] else ...[
+
+                    // زر إدارة العجلة
+                    GestureDetector(
+                      onTap: _isSpinning ? null : _spin,
+                      child: AnimatedBuilder(
+                        animation: _glowAnimation,
+                        builder: (_, __) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: double.infinity,
+                          height: 58,
+                          decoration: BoxDecoration(
+                            gradient: _isSpinning
+                                ? LinearGradient(colors: [_cardBg, _cardBg])
+                                : const LinearGradient(
+                              colors: [
+                                Color(0xFF3D2800),
+                                Color(0xFFB8890A),
+                                Color(0xFFE8C840),
+                                Color(0xFFB8890A),
+                                Color(0xFF3D2800),
+                              ],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(29),
+                            border: _isSpinning
+                                ? Border.all(color: _gold.withOpacity(0.3))
+                                : null,
+                            boxShadow: _isSpinning
+                                ? []
+                                : [
+                              BoxShadow(
+                                color: _gold.withOpacity(0.4 * _glowAnimation.value),
+                                blurRadius: 25,
+                                spreadRadius: 2,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              _isSpinning ? 'تدور...' : 'أدر العجلة',
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: _isSpinning
+                                    ? _gold.withOpacity(0.5)
+                                    : const Color(0xFF1A0E00),
+                                letterSpacing: 3,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // زر تخطي
+                    GestureDetector(
+                      onTap: _goToMatch,
+                      child: Text(
+                        'تخطي ← ابدأ بدون تحدي',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          color: _goldText.withOpacity(0.5),
+                          fontSize: 13,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
