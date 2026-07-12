@@ -206,6 +206,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return _questions.isNotEmpty ? _questions[_currentIndex].points : 0;
   }
 
+
+  bool get _isAiChallenge => widget.category?.id == 'ai_challenge';
+
   void _selectWinner(String team) {
     if (_selectedTeam != null) return;
     _timer?.cancel();
@@ -660,6 +663,46 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ),
                 ),
 
+
+                // ===== تعليمات تحدي الذكاء =====
+                if (_isAiChallenge && !_showAnswer) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0A0A0A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF9B59B6).withOpacity(0.5), width: 1),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('🤖', style: TextStyle(fontSize: 32)),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'تحدي الذكاء الاصطناعي',
+                          style: TextStyle(fontFamily: 'Tajawal', color: Color(0xFF9B59B6), fontSize: 16, fontWeight: FontWeight.w800),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          width: double.infinity,
+                          height: 0.5,
+                          color: const Color(0xFF9B59B6).withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 10),
+                        _aiStep('١', 'افتح Claude أو أي أداة AI على هاتفك'),
+                        const SizedBox(height: 6),
+                        _aiStep('٢', 'انسخ البرومبت أعلاه وولّد الصورة'),
+                        const SizedBox(height: 6),
+                        _aiStep('٣', 'اعرض صورتك للمقدم والجمهور'),
+                        const SizedBox(height: 6),
+                        _aiStep('٤', 'المقدم يحكم من الصورة الأجمل'),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 10),
 
                 // ===== الإجابة الصحيحة =====
@@ -828,6 +871,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         border: Border.all(color: color.withOpacity(0.4), width: 0.8),
       ),
       child: Text(text, style: TextStyle(fontFamily: 'Tajawal', color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+    );
+  }
+
+
+  Widget _aiStep(String number, String text) {
+    return Row(
+      children: [
+        Container(
+          width: 24, height: 24,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF9B59B6).withOpacity(0.15),
+            border: Border.all(color: const Color(0xFF9B59B6).withOpacity(0.5)),
+          ),
+          child: Center(
+            child: Text(number, style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFF9B59B6), fontSize: 10, fontWeight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(text, style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.w500)),
+        ),
+      ],
     );
   }
 
