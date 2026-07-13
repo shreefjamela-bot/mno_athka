@@ -6,20 +6,22 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../../core/cloudflare_config.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/question_model.dart';
 import '../../data/repositories/supabase_repository.dart';
 
 const _gold = Color(0xFFC49830);
 const _goldLight = Color(0xFFF0D060);
-const _goldDark = Color(0xFF6B4A10);
 const _bg = Color(0xFF080808);
 const _cardBg = Color(0xFF0E0E0E);
 const _goldText = Color(0xFF5A4820);
 const _team1Color = Color(0xFF2D7A5F);
 const _team2Color = Color(0xFF8B2635);
 const _aiColor = Color(0xFF9B59B6);
+
+// ✅ رابط Supabase Edge Function
+const _functionUrl = 'https://qfvobkacbxeyaybfcuju.supabase.co/functions/v1/generate-image';
+const _supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdm9ia2FjYnhleWF5YmZjdWp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxNzIzNzQsImV4cCI6MjA2MDc0ODM3NH0.hfNZvxVU5NdJcbKMVIg3TqcqSLF9M7S6CZFK5Lv9KWA';
 
 class AiChallengeScreen extends StatefulWidget {
   final int level;
@@ -92,23 +94,26 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
     }
   }
 
+  // ✅ توليد الصورة عبر Supabase Edge Function
   Future<Uint8List?> _generateImage(String prompt) async {
     try {
       final response = await http.post(
-        Uri.parse('${CloudflareConfig.baseUrl}/${CloudflareConfig.imageModel}'),
+        Uri.parse(_functionUrl),
         headers: {
-          'Authorization': 'Bearer ${CloudflareConfig.apiToken}',
+          'Authorization': 'Bearer $_supabaseAnonKey',
           'Content-Type': 'application/json',
         },
         body: jsonEncode({
           'prompt': '$prompt, cinematic, photorealistic, 8k, dramatic lighting, highly detailed',
-          'num_steps': 8,
         }),
-      ).timeout(const Duration(seconds: 45));
+      ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
-        return response.bodyBytes;
+        final json = jsonDecode(response.body);
+        final base64String = json['image'] as String;
+        return base64Decode(base64String);
       }
+      debugPrint('Error: ${response.statusCode} — ${response.body}');
       return null;
     } catch (e) {
       debugPrint('Image generation error: $e');
@@ -270,8 +275,6 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
-                      // فريق ١
                       Expanded(child: _teamImageCard(
                         teamName: widget.team1Name,
                         teamColor: _team1Color,
@@ -281,10 +284,7 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
                         isWinner: _winner == 'team1',
                         onGenerate: () => _generateForTeam(1),
                       )),
-
                       const SizedBox(width: 12),
-
-                      // فريق ٢
                       Expanded(child: _teamImageCard(
                         teamName: widget.team2Name,
                         teamColor: _team2Color,
@@ -384,7 +384,6 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
       ),
       child: Column(
         children: [
-          // اسم الفريق
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -404,8 +403,6 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
               ],
             ),
           ),
-
-          // منطقة الصورة
           SizedBox(
             height: 180,
             child: ClipRRect(
@@ -417,8 +414,6 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
                   : _placeholderWidget(teamColor, error),
             ),
           ),
-
-          // زر التوليد
           Padding(
             padding: const EdgeInsets.all(8),
             child: GestureDetector(
@@ -457,14 +452,11 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 40, height: 40,
-            child: CircularProgressIndicator(color: color, strokeWidth: 2),
-          ),
+          SizedBox(width: 40, height: 40, child: CircularProgressIndicator(color: color, strokeWidth: 2)),
           const SizedBox(height: 12),
           Text('يولّد الصورة...', style: TextStyle(fontFamily: 'Tajawal', color: color.withOpacity(0.7), fontSize: 11)),
           const SizedBox(height: 4),
-          Text('قد يستغرق 10-30 ثانية', style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.4), fontSize: 9)),
+          Text('قد يستغرق 15-30 ثانية', style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.4), fontSize: 9)),
         ],
       ),
     );
