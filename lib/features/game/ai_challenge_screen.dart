@@ -136,8 +136,8 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
     try {
       final completer = Completer<Uint8List?>();
       final input = html.FileUploadInputElement()
-        ..accept = 'image/*'
-        ..capture = 'environment';
+        ..accept = 'image/*';
+      input.setAttribute('capture', 'environment');
       input.click();
       input.onChange.listen((event) {
         final file = input.files?.first;
