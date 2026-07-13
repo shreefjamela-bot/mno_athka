@@ -2,10 +2,12 @@
 // شاشة تحدي الذكاء — AI Image Battle
 // ==============================
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../data/models/category_model.dart';
 import '../../data/models/question_model.dart';
 import '../../data/repositories/supabase_repository.dart';
@@ -94,29 +96,40 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
     }
   }
 
-  // ✅ توليد الصورة عبر Supabase Edge Function
+  // ✅ توليد الصورة عبر Supabase Edge Function باستخدام XMLHttpRequest
   Future<Uint8List?> _generateImage(String prompt) async {
     try {
-      final response = await http.post(
-        Uri.parse(_functionUrl),
-        headers: {
-          'Authorization': 'Bearer $_supabaseAnonKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'prompt': '$prompt, cinematic, photorealistic, 8k, dramatic lighting, highly detailed',
-        }),
-      ).timeout(const Duration(seconds: 60));
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(response.body);
-        final base64String = json['image'] as String;
-        return base64Decode(base64String);
-      }
-      debugPrint('Error: ${response.statusCode} — ${response.body}');
-      return null;
+      final completer = Completer<Uint8List?>();
+      final xhr = html.HttpRequest();
+      xhr.open('POST', _functionUrl);
+      xhr.setRequestHeader('Authorization', 'Bearer $_supabaseAnonKey');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.responseType = 'text';
+      xhr.onLoad.listen((event) {
+        if (xhr.status == 200) {
+          try {
+            final json = jsonDecode(xhr.responseText!);
+            final base64String = json['image'] as String;
+            completer.complete(base64Decode(base64String));
+          } catch (e) {
+            debugPrint('Parse error: \$e');
+            completer.complete(null);
+          }
+        } else {
+          debugPrint('HTTP Error: \${xhr.status}');
+          completer.complete(null);
+        }
+      });
+      xhr.onError.listen((event) {
+        debugPrint('XHR Error');
+        completer.complete(null);
+      });
+      xhr.send(jsonEncode({
+        'prompt': '\$prompt, cinematic, photorealistic, 8k, dramatic lighting, highly detailed',
+      }));
+      return await completer.future.timeout(const Duration(seconds: 60));
     } catch (e) {
-      debugPrint('Image generation error: $e');
+      debugPrint('Image generation error: \$e');
       return null;
     }
   }
