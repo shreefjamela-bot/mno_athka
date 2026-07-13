@@ -95978,16 +95978,17 @@ n.e=s+A.dv(r==null?0:r);++n.r
 n.f=n.f===1?2:1},
 $S:0}
 A.azT.prototype={
-$3(a,b,c){var s,r,q,p,o,n,m,l=this.a,k=l.a,j=k.c,i=k.d
-k=k.r==="time_pressure"?15:120
-s=l.x
-r=l.y
-q=l.z
-p=l.Q
-o=l.as
-n=l.at
-m=l.ax
-return A.aOf(0,this.c,this.b,p,s,q,j,r,l.ay,o,m,i,n,k)},
+$3(a,b,c){var s,r,q,p,o,n,m,l=this.c,k=this.a,j=k.a,i=j.c,h=j.d
+if(l.a==="think_fast")j=15
+else j=j.r==="time_pressure"?15:120
+s=k.x
+r=k.y
+q=k.z
+p=k.Q
+o=k.as
+n=k.at
+m=k.ax
+return A.aOf(0,l,this.b,p,s,q,i,r,k.ay,o,m,h,n,j)},
 $C:"$3",
 $R:3,
 $S:245}

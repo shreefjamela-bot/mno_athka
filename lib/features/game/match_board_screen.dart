@@ -240,7 +240,7 @@ class _MatchBoardScreenState extends State<MatchBoardScreen>
         pageBuilder: (_, __, ___) => GameScreen(
           level: level, category: category,
           team1Name: widget.team1Name, team2Name: widget.team2Name,
-          timeLimit: _questionTime,
+          timeLimit: category.id == 'think_fast' ? 15 : _questionTime,
           team1CallUsed: _team1CallUsed, team1RevealUsed: _team1RevealUsed,
           team1ExtendUsed: _team1ExtendUsed, team1AltUsed: _team1AltUsed,
           team2CallUsed: _team2CallUsed, team2RevealUsed: _team2RevealUsed,
