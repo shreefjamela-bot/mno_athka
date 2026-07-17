@@ -3,7 +3,7 @@
 // Luxury Dark Theme
 // ==============================
 
-import 'dart:math';\nimport 'features/game/platform/video_player.dart';
+import 'dart:math';
 import 'features/game/platform/video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
