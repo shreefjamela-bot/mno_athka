@@ -1,10 +1,13 @@
-﻿// ==============================
+// ==============================
 // الملف الرئيسي — منو أذكى
 // Luxury Dark Theme
 // ==============================
 
 import 'dart:math';
-import 'platform/video_player.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:ui_web' as ui;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -121,35 +124,199 @@ class _StarsPainter extends CustomPainter {
 // ==============================
 // فيديو تعريفي
 // ==============================
-class _VideoCard extends StatelessWidget {
+class _VideoCard extends StatefulWidget {
   const _VideoCard();
 
-  static const _videoUrl = 'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4';
+  @override
+  State<_VideoCard> createState() => _VideoCardState();
+}
+
+class _VideoCardState extends State<_VideoCard> {
+  static bool _registered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_registered) {
+      _registered = true;
+      ui.platformViewRegistry.registerViewFactory(
+        'mno-video-player',
+            (int viewId) {
+          final video = html.VideoElement()
+            ..src = 'https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4'
+            ..autoplay = false
+            ..loop = true
+            ..muted = true
+            ..controls = true
+            ..style.width = '100%'
+            ..style.height = '100%'
+            ..style.objectFit = 'cover'
+            ..style.borderRadius = '12px'
+            ..style.background = 'transparent';
+          return video;
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    registerVideoPlayer('mno-video-player', _videoUrl);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(children: [
-            const Icon(Icons.play_circle_outline_rounded, color: _gold, size: 18),
-            const SizedBox(width: 8),
-            Text('تعرف على اللعبة',
-                style: TextStyle(fontFamily: 'Tajawal', color: _gold.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.w500, letterSpacing: 2)),
-          ]),
+    return _LuxuryCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.play_circle_outline_rounded, color: _gold, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'تعرف على اللعبة',
+                style: TextStyle(
+                  fontFamily: 'Tajawal',
+                  color: _gold.withOpacity(0.8),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              height: 200,
+              child: const HtmlElementView(viewType: 'mno-video-player'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '🔊 اضغط على الفيديو لتشغيل الصوت',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              color: _goldText.withOpacity(0.6),
+              fontSize: 10,
+              letterSpacing: 1,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==============================
+// بطاقة Luxury
+// ==============================
+class _LuxuryCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets? padding;
+
+  const _LuxuryCard({required this.child, this.padding});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _gold.withOpacity(0.35), width: 0.8),
+      ),
+      child: child,
+    );
+  }
+}
+
+// ==============================
+// زر أيقونة علوي
+// ==============================
+class _TopIconBtn extends StatelessWidget {
+  final Widget icon;
+  final VoidCallback onTap;
+
+  const _TopIconBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: _gold.withOpacity(0.5), width: 0.8),
         ),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(height: 200, child: VideoPlayerWidget(url: _videoUrl)),
+        child: Center(child: icon),
+      ),
+    );
+  }
+}
+
+// ==============================
+// زر ثانوي
+// ==============================
+class _SecondaryBtn extends StatefulWidget {
+  final Widget icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SecondaryBtn({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  State<_SecondaryBtn> createState() => _SecondaryBtnState();
+}
+
+class _SecondaryBtnState extends State<_SecondaryBtn> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        transform: Matrix4.identity()..translate(0.0, _pressed ? 2.0 : 0.0),
+        decoration: BoxDecoration(
+          color: _pressed ? _gold.withOpacity(0.08) : _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _gold.withOpacity(_pressed ? 0.7 : 0.4),
+            width: 0.8,
+          ),
         ),
-        const SizedBox(height: 8),
-        Text('🔊 اضغط على الفيديو لتشغيل الصوت',
-            style: TextStyle(fontFamily: 'Tajawal', color: _goldText.withOpacity(0.6), fontSize: 10, letterSpacing: 1),
-            textAlign: TextAlign.center),
-      ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            widget.icon,
+            const SizedBox(height: 6),
+            Text(
+              widget.label,
+              style: const TextStyle(
+                fontFamily: 'Tajawal',
+                color: _goldText,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
