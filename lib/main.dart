@@ -1,10 +1,10 @@
-// ==============================
+﻿// ==============================
 // الملف الرئيسي — منو أذكى
 // Luxury Dark Theme
 // ==============================
 
 import 'dart:math';
-import 'platform/video_player.dart';
+import 'features/game/platform/video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/theme/app_theme.dart';
@@ -1172,6 +1172,83 @@ class _WeeklyChallengeCardState extends State<_WeeklyChallengeCard>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TopIconBtn extends StatelessWidget {
+  final Widget icon;
+  final VoidCallback onTap;
+  const _TopIconBtn({required this.icon, required this.onTap});
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42, height: 42,
+        decoration: BoxDecoration(
+          color: const Color(0xFF111111),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: const Color(0xFFC49830).withOpacity(0.5), width: 0.8),
+        ),
+        child: Center(child: icon),
+      ),
+    );
+  }
+}
+
+class _SecondaryBtn extends StatefulWidget {
+  final Widget icon;
+  final String label;
+  final VoidCallback onTap;
+  const _SecondaryBtn({required this.icon, required this.label, required this.onTap});
+  @override
+  State<_SecondaryBtn> createState() => _SecondaryBtnState();
+}
+
+class _SecondaryBtnState extends State<_SecondaryBtn> {
+  bool _pressed = false;
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        transform: Matrix4.identity()..translate(0.0, _pressed ? 2.0 : 0.0),
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFC49830).withOpacity(0.08) : const Color(0xFF0E0E0E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFC49830).withOpacity(_pressed ? 0.7 : 0.4), width: 0.8),
+        ),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          widget.icon,
+          const SizedBox(height: 6),
+          Text(widget.label,
+            style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFF5A4820), fontSize: 11, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center),
+        ]),
+      ),
+    );
+  }
+}
+
+class _LuxuryCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets? padding;
+  const _LuxuryCard({required this.child, this.padding});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding ?? const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E0E0E),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFC49830).withOpacity(0.35), width: 0.8),
+      ),
+      child: child,
     );
   }
 }
