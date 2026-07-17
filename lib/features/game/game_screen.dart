@@ -4,10 +4,7 @@
 
 import 'dart:async';
 import 'dart:math';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:ui_web' as ui;
+import '../../../features/game/platform/video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -144,18 +141,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   void _registerVideo(String url) {
     _videoCounter++;
     _videoViewId = _videoCounter;
-    ui.platformViewRegistry.registerViewFactory('game-video-$_videoViewId', (int id) {
-      return html.VideoElement()
-        ..src = url
-        ..autoplay = true
-        ..loop = true
-        ..muted = true
-        ..controls = true
-        ..style.width = '100%'
-        ..style.height = '100%'
-        ..style.objectFit = 'cover'
-        ..style.borderRadius = '14px';
-    });
+    final viewType = 'game-video-$_videoViewId';
+    registerVideoPlayer(viewType, url);
     setState(() => _currentVideoUrl = url);
   }
 
@@ -274,7 +261,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     }
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
-      child: SizedBox(height: 200, child: HtmlElementView(viewType: 'game-video-$_videoViewId')),
+      child: SizedBox(height: 200, child: VideoPlayerWidget(url: _currentVideoUrl!)),
     );
   }
 

@@ -3,11 +3,11 @@
 // ==============================
 
 import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'platform/camera.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/question_model.dart';
@@ -134,23 +134,7 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
 
   Future<void> _captureImage(int team) async {
     try {
-      final completer = Completer<Uint8List?>();
-      final input = html.FileUploadInputElement()
-        ..accept = 'image/*';
-      input.setAttribute('capture', 'environment');
-      input.click();
-      input.onChange.listen((event) {
-        final file = input.files?.first;
-        if (file != null) {
-          final reader = html.FileReader();
-          reader.readAsArrayBuffer(file);
-          reader.onLoad.listen((e) => completer.complete(reader.result as Uint8List));
-          reader.onError.listen((_) => completer.complete(null));
-        } else {
-          completer.complete(null);
-        }
-      });
-      final imageBytes = await completer.future;
+      final imageBytes = await pickImageFromCamera();
       if (imageBytes != null && mounted) {
         setState(() {
           if (team == 1) _team1Image = imageBytes;
@@ -175,15 +159,14 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
       final team1Base64 = base64Encode(_team1Image!);
       final team2Base64 = base64Encode(_team2Image!);
 
-      final response = await html.HttpRequest.request(
-        'https://api.anthropic.com/v1/messages',
-        method: 'POST',
-        requestHeaders: {
+      final httpResponse = await http.post(
+        Uri.parse('https://api.anthropic.com/v1/messages'),
+        headers: {
           'Content-Type': 'application/json',
           'x-api-key': '',
           'anthropic-version': '2023-06-01',
         },
-        sendData: jsonEncode({
+        body: jsonEncode({
           'model': 'claude-sonnet-4-6',
           'max_tokens': 300,
           'messages': [
@@ -216,7 +199,7 @@ class _AiChallengeScreenState extends State<AiChallengeScreen>
         }),
       );
 
-      final data = jsonDecode(response.responseText!);
+      final data = jsonDecode(httpResponse.body);
       final text = data['content'][0]['text'] as String;
       final clean = text.replaceAll('```json', '').replaceAll('```', '').trim();
       final verdict = jsonDecode(clean);
