@@ -24,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int _totalGames = 0;
   int _correctAnswers = 0;
   bool _isLoading = true;
+  bool _isDeleting = false;
 
   // اتصال Supabase
   final _supabase = Supabase.instance.client;
@@ -60,6 +61,101 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: AppColors.primary,
         ),
       );
+    }
+  }
+
+  // ==============================
+  // نافذة تأكيد حذف الحساب
+  // ==============================
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.wrong),
+            SizedBox(width: 8),
+            Text(
+              'حذف الحساب',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'هل أنت متأكد من حذف حسابك؟\n\n'
+              'سيتم حذف حسابك وجميع بياناتك نهائياً.\n'
+              'هذا الإجراء لا يمكن التراجع عنه.',
+          style: TextStyle(color: AppColors.textSecondary, height: 1.6),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'إلغاء',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.wrong,
+            ),
+            child: const Text(
+              'حذف نهائي',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteAccount();
+    }
+  }
+
+  // ==============================
+  // دالة حذف الحساب — تنادي Edge Function
+  // ==============================
+  Future<void> _deleteAccount() async {
+    setState(() => _isDeleting = true);
+
+    try {
+      // نداء الدالة delete-account على Supabase
+      final response = await _supabase.functions.invoke('delete-account');
+
+      if (response.status == 200) {
+        // نجح الحذف — سجّل خروج ونظّف البيانات المحلية
+        await _supabase.auth.signOut();
+
+        if (mounted) {
+          setState(() => _isDeleting = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم حذف حسابك نهائياً'),
+              backgroundColor: AppColors.wrong,
+            ),
+          );
+          // ارجع للشاشة السابقة
+          Navigator.pop(context);
+        }
+      } else {
+        throw Exception('فشل الحذف');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حدث خطأ أثناء حذف الحساب — حاول مرة أخرى'),
+            backgroundColor: AppColors.wrong,
+          ),
+        );
+      }
     }
   }
 
@@ -165,7 +261,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () async {
+                onPressed: _isDeleting
+                    ? null
+                    : () async {
                   if (isLoggedIn) {
                     await _signOut();
                   } else {
@@ -200,6 +298,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
+
+            // ==============================
+            // منطقة الخطر — زر حذف الحساب
+            // يظهر فقط عند تسجيل الدخول
+            // ==============================
+            if (isLoggedIn) ...[
+              const Spacer(),
+              const Divider(color: AppColors.textSecondary, height: 1),
+              const SizedBox(height: AppSizes.spaceMD),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: _isDeleting ? null : _confirmDeleteAccount,
+                  icon: _isDeleting
+                      ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.wrong,
+                    ),
+                  )
+                      : const Icon(Icons.delete_forever,
+                      color: AppColors.wrong),
+                  label: Text(
+                    _isDeleting ? 'جاري الحذف...' : 'حذف الحساب نهائياً',
+                    style: const TextStyle(
+                      color: AppColors.wrong,
+                      fontSize: AppSizes.fontMD,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.spaceMD),
+            ],
 
           ],
         ),
