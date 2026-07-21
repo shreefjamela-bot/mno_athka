@@ -28333,8 +28333,7 @@ this.b=b},
 aIo:function aIo(a){this.a=a},
 aUP(a,b){$.aIT()
 $.q1().xK(a,new A.aIA(b),!0)},
-Ga:function Ga(a,b){this.c=a
-this.a=b},
+Ga:function Ga(a){this.a=a},
 aIA:function aIA(a){this.a=a},
 Us:function Us(a,b){this.b=a
 this.a=b},
@@ -96041,9 +96040,9 @@ vG(){var s=this
 if(s.Q||s.as||s.at!=null)return
 s.y=A.xz(B.d_,new A.axW(s))},
 abn(a){return A.fN(A.a8(14),A.aO5(new A.axR(),B.oM,a,new A.axS(),1/0),B.aB)},
-abo(){var s=null,r=this.fr
-if(r==null)return A.a3(s,B.p7,B.i,s,s,new A.a2(B.J,s,s,A.a8(14),s,s,B.q),s,200,s,s,s,s,s)
-return A.fN(A.a8(14),A.c4(new A.Ga(r,s),200,s),B.aB)},
+abo(){var s=null
+if(this.fr==null)return A.a3(s,B.p7,B.i,s,s,new A.a2(B.J,s,s,A.a8(14),s,s,B.q),s,200,s,s,s,s,s)
+return A.fN(A.a8(14),A.c4(new A.Ga(s),200,s),B.aB)},
 ab3(a){return A.fN(A.a8(12),A.aO5(new A.axP(),B.oM,a,new A.axQ(),1/0),B.aB)},
 A2(a,b,c,d,e,f){var s=null,r=A.a8(20),q=B.c.L(127.5),p=A.aM(A.o(q,a.i()>>>16&255,a.i()>>>8&255,a.i()&255),1),o=A.U(d,s,s,s,B.nI,s,s),n=A.U(f,s,s,s,A.ap(s,s,a,s,s,s,s,s,"Tajawal",s,s,20,s,s,B.cp,s,s,!0,s,s,s,s,s,s,s,s),s,s),m=A.o(38,a.i()>>>16&255,a.i()>>>8&255,a.i()&255),l=A.a8(24)
 q=A.aM(A.o(q,a.i()>>>16&255,a.i()>>>8&255,a.i()&255),1)
@@ -96946,7 +96945,7 @@ A.aIo.prototype={
 $1(a){return this.a.dB(0,null)},
 $S:245}
 A.Ga.prototype={
-J(a){return A.aPg(null,B.Bb,B.h.k(B.d.gu("video-"+this.c)))}}
+J(a){return A.aPg(null,B.Bb,"mno-video-player")}}
 A.aIA.prototype={
 $1(a){var s,r=document.createElement("video")
 r.src=this.a
@@ -98178,10 +98177,10 @@ m.drawCircle(k.a*p,k.b*o,h,f)
 f.delete()}},
 cu(a){return a.b!==this.b}}
 A.a2Z.prototype={
-J(a){var s,r="https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4",q=null
-A.aUP("mno-video-player",r)
+J(a){var s,r=null
+A.aUP("mno-video-player","https://qfvobkacbxeyaybfcuju.supabase.co/storage/v1/object/public/questions-media/wajha.mp4")
 s=t.p
-return A.aR(A.b([new A.bE(B.Jc,A.br(A.b([B.KI,B.e7,A.U("\u062a\u0639\u0631\u0641 \u0639\u0644\u0649 \u0627\u0644\u0644\u0639\u0628\u0629",q,q,q,A.ap(q,q,A.o(204,B.e.i()>>>16&255,B.e.i()>>>8&255,B.e.i()&255),q,q,q,q,q,"Tajawal",q,q,13,q,q,B.a3,q,q,!0,q,2,q,q,q,q,q,q),q,q)],s),B.n,B.o,B.m,0),q),A.fN(A.a8(12),A.c4(new A.Ga(r,q),200,q),B.aB),B.P,A.U("\ud83d\udd0a \u0627\u0636\u063a\u0637 \u0639\u0644\u0649 \u0627\u0644\u0641\u064a\u062f\u064a\u0648 \u0644\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0635\u0648\u062a",q,q,q,A.ap(q,q,A.o(153,B.j.i()>>>16&255,B.j.i()>>>8&255,B.j.i()&255),q,q,q,q,q,"Tajawal",q,q,10,q,q,q,q,q,!0,q,1,q,q,q,q,q,q),B.H,q)],s),B.ae,B.o,B.m)}}
+return A.aR(A.b([new A.bE(B.Jc,A.br(A.b([B.KI,B.e7,A.U("\u062a\u0639\u0631\u0641 \u0639\u0644\u0649 \u0627\u0644\u0644\u0639\u0628\u0629",r,r,r,A.ap(r,r,A.o(204,B.e.i()>>>16&255,B.e.i()>>>8&255,B.e.i()&255),r,r,r,r,r,"Tajawal",r,r,13,r,r,B.a3,r,r,!0,r,2,r,r,r,r,r,r),r,r)],s),B.n,B.o,B.m,0),r),A.fN(A.a8(12),A.c4(new A.Ga(r),200,r),B.aB),B.P,A.U("\ud83d\udd0a \u0627\u0636\u063a\u0637 \u0639\u0644\u0649 \u0627\u0644\u0641\u064a\u062f\u064a\u0648 \u0644\u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0635\u0648\u062a",r,r,r,A.ap(r,r,A.o(153,B.j.i()>>>16&255,B.j.i()>>>8&255,B.j.i()&255),r,r,r,r,r,"Tajawal",r,r,10,r,r,r,r,r,!0,r,1,r,r,r,r,r,r),B.H,r)],s),B.ae,B.o,B.m)}}
 A.BU.prototype={
 af(){var s=new A.Iu()
 s.FM(42)

@@ -10,7 +10,7 @@ class VideoPlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HtmlElementView(viewType: 'video-$url'.hashCode.toString());
+    return HtmlElementView(viewType: 'mno-video-player');
   }
 }
 
